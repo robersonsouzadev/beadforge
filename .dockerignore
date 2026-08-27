@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.gitignore
+.env*.local
+scratch
+output_test.pdf
+test-pipeline.ts
+tests
+npm-debug.log
+README.md

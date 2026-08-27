@@ -1,0 +1,272 @@
+'use client';
+
+import React, { Suspense, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Center } from '@react-three/drei';
+import { useEditorStore } from '@/store/editor-store';
+import { BeadRenderer3D } from './BeadRenderer3D';
+import { LayerCanvas2D } from './LayerCanvas2D';
+import {
+  Layers,
+  Sparkles,
+  Eye,
+  Sliders,
+  Paintbrush,
+  Eraser,
+  Box,
+  LayoutGrid,
+} from 'lucide-react';
+
+function PegboardBaseHelper({ width, height, pitch }: { width: number; height: number; pitch: number }) {
+  const sizeX = width * pitch;
+  const sizeY = height * pitch;
+
+  return (
+    <group position={[0, 0, -pitch * 0.5]}>
+      {/* Placa base translúcida */}
+      <mesh position={[0, 0, -1]}>
+        <boxGeometry args={[sizeX + 8, sizeY + 8, 2]} />
+        <meshStandardMaterial color="#18181B" roughness={0.7} />
+      </mesh>
+      {/* Linha da borda */}
+      <gridHelper
+        args={[Math.max(sizeX, sizeY) + 10, Math.max(width, height), '#FACC15', '#3F3F46']}
+        rotation={[Math.PI / 2, 0, 0]}
+      />
+    </group>
+  );
+}
+
+export function Viewport3D() {
+  const {
+    grid3D,
+    activeLayerZ,
+    showAllLayers3D,
+    setShowAllLayers3D,
+    explodedSpacing,
+    setExplodedSpacing,
+    onionSkinEnabled,
+    setOnionSkinEnabled,
+    active3DTool,
+    set3DTool,
+    setIsAssemblyGuideOpen,
+    highlightBeadCode,
+  } = useEditorStore();
+
+  const [centerViewMode, setCenterViewMode] = useState<'3d' | '2d_layer'>('3d');
+  const [layer2dViewMode, setLayer2dViewMode] = useState<'pattern' | 'assembly'>('pattern');
+
+  const currentLayer = grid3D ? grid3D.layers[activeLayerZ] || grid3D.layers[0] : null;
+
+  return (
+    <div className="relative flex-1 h-full w-full bg-zinc-950 overflow-hidden select-none">
+      {/* Visualização Central: Ou Viewport 3D ou Molde 2D da Camada */}
+      {centerViewMode === '3d' ? (
+        <Canvas
+          shadows
+          frameloop="demand"
+          camera={{ position: [0, -60, 80], fov: 45, up: [0, 0, 1] }}
+          className="w-full h-full"
+        >
+          <ambientLight intensity={0.75} />
+          <directionalLight position={[60, -80, 100]} intensity={1.2} castShadow />
+          <directionalLight position={[-60, 80, -40]} intensity={0.4} />
+          <pointLight position={[0, 0, 80]} intensity={0.5} />
+
+          <Suspense fallback={null}>
+            <Center>
+              {grid3D && (
+                <>
+                  <BeadRenderer3D grid3D={grid3D} />
+                  <PegboardBaseHelper
+                    width={grid3D.width}
+                    height={grid3D.height}
+                    pitch={grid3D.pitchMm || 2.6}
+                  />
+                </>
+              )}
+            </Center>
+          </Suspense>
+
+          <OrbitControls
+            makeDefault
+            enableDamping
+            dampingFactor={0.08}
+            minDistance={15}
+            maxDistance={350}
+          />
+        </Canvas>
+      ) : currentLayer ? (
+        <div className="w-full h-full relative">
+          <LayerCanvas2D
+            grid={currentLayer.grid}
+            highlightBeadCode={highlightBeadCode}
+            viewMode={layer2dViewMode}
+          />
+        </div>
+      ) : null}
+
+      {/* Barra de Ferramentas Flutuante Superior */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-xl px-2.5 py-1.5 flex items-center gap-2 shadow-2xl z-10 text-xs">
+        {/* Alternador de Modo: 3D Global vs Molde 2D da Camada */}
+        <div className="flex items-center bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 shrink-0">
+          <button
+            onClick={() => setCenterViewMode('3d')}
+            className={`px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${
+              centerViewMode === '3d'
+                ? 'bg-amber-400 text-zinc-950 shadow-md'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>Vista 3D</span>
+          </button>
+
+          <button
+            onClick={() => setCenterViewMode('2d_layer')}
+            className={`px-2.5 py-1 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all ${
+              centerViewMode === '2d_layer'
+                ? 'bg-amber-400 text-zinc-950 shadow-md'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Molde 2D (Z{activeLayerZ + 1})</span>
+          </button>
+        </div>
+
+        {centerViewMode === '3d' ? (
+          <>
+            {/* Ferramentas de Edição 3D */}
+            <div className="flex items-center gap-1 px-2 border-x border-zinc-800">
+              <button
+                onClick={() => set3DTool('paint')}
+                className={`p-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                  active3DTool === 'paint'
+                    ? 'bg-amber-400 text-zinc-950 font-bold'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Pincel 3D - Pintar bead com a cor selecionada"
+              >
+                <Paintbrush className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Pintar</span>
+              </button>
+
+              <button
+                onClick={() => set3DTool('remove')}
+                className={`p-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                  active3DTool === 'remove'
+                    ? 'bg-amber-400 text-zinc-950 font-bold'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Borracha 3D - Apagar bead clicado"
+              >
+                <Eraser className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Apagar</span>
+              </button>
+            </div>
+
+            {/* Controles de Visualização 3D */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowAllLayers3D(!showAllLayers3D)}
+                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-colors ${
+                  showAllLayers3D
+                    ? 'bg-zinc-800 text-amber-400 border border-amber-400/40'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title={showAllLayers3D ? 'Mostrando todas as camadas' : 'Isolando camada ativa'}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">
+                  {showAllLayers3D ? 'Todas Camadas' : `Camada ${activeLayerZ + 1}`}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setOnionSkinEnabled(!onionSkinEnabled)}
+                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-colors ${
+                  onionSkinEnabled
+                    ? 'bg-zinc-800 text-cyan-400 border border-cyan-400/40'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Onion Skinning - Mostrar ghost azul/verde das camadas adjacentes"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Onion Skin</span>
+              </button>
+
+              {/* Slider de Exploded View */}
+              <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+                <span className="text-[11px] text-zinc-400 hidden lg:inline">Explosão:</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="25"
+                  step="1"
+                  value={explodedSpacing}
+                  onChange={(e) => setExplodedSpacing(Number(e.target.value))}
+                  className="w-16 sm:w-20 accent-amber-400 h-1 bg-zinc-800 rounded-lg cursor-pointer"
+                  title="Separar camadas verticalmente em milímetros"
+                />
+                <span className="text-[10px] font-mono text-zinc-400 w-7 text-right">
+                  {explodedSpacing}mm
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Controles do Molde 2D da Camada */
+          <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+            <button
+              onClick={() => setLayer2dViewMode('pattern')}
+              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                layer2dViewMode === 'pattern'
+                  ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Com Códigos
+            </button>
+            <button
+              onClick={() => setLayer2dViewMode('assembly')}
+              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                layer2dViewMode === 'assembly'
+                  ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              Pixel Art
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Botão de Iniciar Montagem Passo-a-Passo */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <button
+          onClick={() => setIsAssemblyGuideOpen(true)}
+          className="bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-2xl transition-all active:scale-95 text-xs ring-2 ring-amber-400/30"
+        >
+          <Layers className="w-4 h-4" />
+          <span>Guia de Montagem 3D</span>
+        </button>
+      </div>
+
+      {/* Mensagem informativa de estado vazio */}
+      {(!grid3D || grid3D.totalBeads === 0) && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-4 text-center">
+          <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-6 rounded-2xl max-w-md shadow-2xl">
+            <Layers className="w-10 h-10 text-amber-400 mx-auto mb-3 opacity-80" />
+            <h3 className="text-sm font-bold text-zinc-100 mb-1">
+              BeadForge Ultra — Estúdio 3D
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Importe um modelo 3D (<strong>.VOX</strong>, <strong>.3MF</strong>, <strong>.ZIP</strong>, <strong>.STL</strong>, <strong>.GLB</strong>) no painel esquerdo para gerar moldes de montagem camada por camada.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

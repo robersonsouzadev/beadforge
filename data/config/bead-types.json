@@ -1,0 +1,21 @@
+[
+  {
+    "id": "hama-mini-26",
+    "name": "Hama Mini / Artkal 2,6mm",
+    "diameterMm": 2.6,
+    "description": "Mini fuse beads de 2,6mm para alta definição e detalhes minuciosos.",
+    "isDefault": true
+  },
+  {
+    "id": "hama-midi-50",
+    "name": "Hama / Perler Midi 5,0mm",
+    "diameterMm": 5.0,
+    "description": "Tamanho padrão clássico mundial de 5mm para artesanato geral."
+  },
+  {
+    "id": "hama-maxi-100",
+    "name": "Hama Maxi 10,0mm",
+    "diameterMm": 10.0,
+    "description": "Beads gigantes de 10mm para crianças e projetos macro."
+  }
+]

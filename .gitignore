@@ -1,0 +1,58 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing & Coverage
+/coverage
+
+# Next.js build output
+/.next/
+/out/
+tsconfig.tsbuildinfo
+
+# Production
+/build
+
+# Scratch & Temporary test files
+/scratch/
+output_test.pdf
+test-pipeline.ts
+
+# Misc
+.DS_Store
+*.pem
+
+# Local env files
+.env*.local
+.env
+
+# Skills & Design generators
+animation-designer/
+banner-design/
+bencium-controlled-ux-designer/
+bencium-innovative-ux-designer/
+brand/
+css-animations/
+design-audit/
+design-system/
+design/
+flutter-animations/
+frontend-design/
+slides/
+threejs/
+typography/
+ui-animation/
+ui-styling/
+ui-ux-pro-max/
+
+# Vercel & IDE
+.vercel
+.idea
+.vscode
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

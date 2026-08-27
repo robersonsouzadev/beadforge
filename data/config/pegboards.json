@@ -1,0 +1,57 @@
+[
+  {
+    "id": "hama-mini-74",
+    "name": "Hama Mini 7,4x7,4cm",
+    "beadTypeId": "hama-mini-26",
+    "widthCm": 7.4,
+    "heightCm": 7.4,
+    "pinsHorizontal": 29,
+    "pinsVertical": 29,
+    "totalBeads": 841,
+    "description": "Placa compacta 29x29 pinos para chaveiros e miniaturas."
+  },
+  {
+    "id": "hama-mini-145",
+    "name": "Hama Mini 14,5x14,5cm",
+    "beadTypeId": "hama-mini-26",
+    "widthCm": 14.5,
+    "heightCm": 14.5,
+    "pinsHorizontal": 57,
+    "pinsVertical": 57,
+    "totalBeads": 3249,
+    "description": "Placa média padrão 57x57 pinos com encaixes modulares."
+  },
+  {
+    "id": "hama-mini-280",
+    "name": "Hama Mini 28x28cm",
+    "beadTypeId": "hama-mini-26",
+    "widthCm": 28.0,
+    "heightCm": 28.0,
+    "pinsHorizontal": 114,
+    "pinsVertical": 114,
+    "totalBeads": 12996,
+    "description": "Placa grande 114x114 pinos para projetos completos."
+  },
+  {
+    "id": "hama-midi-145",
+    "name": "Hama / Perler Midi 14,5x14,5cm",
+    "beadTypeId": "hama-midi-50",
+    "widthCm": 14.5,
+    "heightCm": 14.5,
+    "pinsHorizontal": 29,
+    "pinsVertical": 29,
+    "totalBeads": 841,
+    "description": "Placa clássica 29x29 pinos para beads de 5mm."
+  },
+  {
+    "id": "hama-midi-280",
+    "name": "Hama / Perler Midi 28x28cm",
+    "beadTypeId": "hama-midi-50",
+    "widthCm": 28.0,
+    "heightCm": 28.0,
+    "pinsHorizontal": 58,
+    "pinsVertical": 58,
+    "totalBeads": 3364,
+    "description": "Placa grande 58x58 pinos para beads de 5mm."
+  }
+]
