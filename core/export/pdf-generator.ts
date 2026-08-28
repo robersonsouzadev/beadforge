@@ -1,4 +1,5 @@
-import PDFDocument from 'pdfkit';
+// @ts-ignore
+import PDFDocument from 'pdfkit/js/pdfkit.standalone.js';
 import type { GridMatrix } from '../schemas/grid';
 import type { BeadSummary } from '../schemas/project';
 
