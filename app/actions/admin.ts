@@ -48,7 +48,9 @@ export async function getAdminData(): Promise<AdminStats> {
 
   // 2. Get all subscriptions
   const allSubscriptions = await db.select().from(subscription);
-  const subMap = new Map(allSubscriptions.map((s) => [s.userId, s]));
+  const subMap = new Map<string, typeof subscription.$inferSelect>(
+    allSubscriptions.map((s: typeof subscription.$inferSelect) => [s.userId, s])
+  );
 
   // 3. Get project counts per user
   const allProjects = await db
@@ -65,7 +67,7 @@ export async function getAdminData(): Promise<AdminStats> {
   let proCount = 0;
   let freeCount = 0;
 
-  const usersList = allUsers.map((u) => {
+  const usersList = allUsers.map((u: { id: string; name: string; email: string; createdAt: Date }) => {
     const userSub = subMap.get(u.id);
     const isPro =
       userSub?.status === 'active' || userSub?.status === 'trialing';

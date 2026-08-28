@@ -159,7 +159,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {projects.map((p) => (
+            {projects.map((p: any) => (
               <ProjectCard key={p.id} project={p} />
             ))}
           </div>

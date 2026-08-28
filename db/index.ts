@@ -21,7 +21,7 @@ let initialized = false;
 export async function ensureDbTables() {
   if (initialized || process.env.NEXT_PHASE === 'phase-production-build') return;
   try {
-    await client`
+    await client.unsafe(`
       CREATE TABLE IF NOT EXISTS "user" (
         "id" text PRIMARY KEY NOT NULL,
         "name" text NOT NULL,
@@ -32,6 +32,7 @@ export async function ensureDbTables() {
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
+
       CREATE TABLE IF NOT EXISTS "session" (
         "id" text PRIMARY KEY NOT NULL,
         "expires_at" timestamp NOT NULL,
@@ -42,6 +43,7 @@ export async function ensureDbTables() {
         "user_agent" text,
         "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE
       );
+
       CREATE TABLE IF NOT EXISTS "account" (
         "id" text PRIMARY KEY NOT NULL,
         "account_id" text NOT NULL,
@@ -58,11 +60,9 @@ export async function ensureDbTables() {
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
-      -- Migration: add issuer column if table already exists without it
+
       ALTER TABLE "account" ADD COLUMN IF NOT EXISTS "issuer" text;
-      -- Backfill: set issuer for existing credential accounts
-      UPDATE "account" SET "issuer" = 'local:credential'
-        WHERE "provider_id" = 'credential' AND "issuer" IS NULL;
+
       CREATE TABLE IF NOT EXISTS "verification" (
         "id" text PRIMARY KEY NOT NULL,
         "identifier" text NOT NULL,
@@ -71,6 +71,7 @@ export async function ensureDbTables() {
         "created_at" timestamp DEFAULT now(),
         "updated_at" timestamp DEFAULT now()
       );
+
       CREATE TABLE IF NOT EXISTS "subscription" (
         "id" text PRIMARY KEY NOT NULL,
         "user_id" text NOT NULL UNIQUE REFERENCES "user"("id") ON DELETE CASCADE,
@@ -84,6 +85,7 @@ export async function ensureDbTables() {
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
+
       CREATE TABLE IF NOT EXISTS "project" (
         "id" text PRIMARY KEY NOT NULL,
         "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
@@ -94,16 +96,17 @@ export async function ensureDbTables() {
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
+
       CREATE TABLE IF NOT EXISTS "webhook_event" (
         "id" text PRIMARY KEY NOT NULL,
         "type" text NOT NULL,
         "processed_at" timestamp DEFAULT now() NOT NULL
       );
-    `;
+    `);
     initialized = true;
     console.log('✅ PostgreSQL tables verified/created.');
   } catch (err: any) {
-    // Non-blocking in case DB is starting up
-    console.warn('DB check note:', err?.message || err);
+    console.error('DB check note:', err?.message || err);
+    throw err;
   }
 }
