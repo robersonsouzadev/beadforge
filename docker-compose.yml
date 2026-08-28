@@ -5,17 +5,21 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-beadforge}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-beadforge_secure_pass_2026}
-      POSTGRES_DB: ${POSTGRES_DB:-beadforge_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Selva@!13894645}
+      POSTGRES_DB: ${POSTGRES_DB:-beadforge}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beadforge} -d ${POSTGRES_DB:-beadforge_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beadforge} -d ${POSTGRES_DB:-beadforge}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    networks:
+      - beadforge-net
 
   beadforge:
     build:
@@ -32,19 +36,20 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      - DATABASE_URL=postgres://${POSTGRES_USER:-beadforge}:${POSTGRES_PASSWORD:-beadforge_secure_pass_2026}@postgres:5432/${POSTGRES_DB:-beadforge_db}
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
-      - NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY=${NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY}
-      - NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY=${NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - DATABASE_URL=${DATABASE_URL:-postgres://beadforge:Selva%40%2113894645@postgres:5432/beadforge}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-beadforge_super_secret_auth_key_2026_x}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-https://app.hamabeadsbrasil.com.br}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://app.hamabeadsbrasil.com.br}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-robersonsouza@outlook.com}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+      - NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY=${NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY:-}
+      - NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY=${NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:3000 || exit 1"]
       interval: 30s
@@ -55,7 +60,13 @@ services:
       resources:
         limits:
           memory: 1024M
+    networks:
+      - beadforge-net
 
 volumes:
   postgres_data:
+    driver: local
 
+networks:
+  beadforge-net:
+    driver: bridge
