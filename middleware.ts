@@ -29,7 +29,8 @@ export function middleware(request: NextRequest) {
     pathname === '/login' ||
     pathname === '/register' ||
     pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/api/webhooks');
+    pathname.startsWith('/api/webhooks') ||
+    pathname.startsWith('/api/debug');
 
   if (isPublic) {
     return NextResponse.next();
