@@ -81,7 +81,7 @@ export function Toolbar() {
         </div>
       )}
 
-      {/* Ações e Zoom */}
+      {/* Ações, Zoom e Modo Tela Cheia */}
       <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {/* Desfazer / Refazer */}
         <div className="flex items-center bg-zinc-800/80 p-0.5 rounded-lg border border-zinc-700/60 shadow-inner">
@@ -106,7 +106,7 @@ export function Toolbar() {
         {/* Zoom */}
         <div className="flex items-center gap-0.5 bg-zinc-800/80 p-0.5 rounded-lg border border-zinc-700/60 shadow-inner">
           <button
-            onClick={() => setZoom(zoom * 0.85)}
+            onClick={() => setZoom(Math.max(0.05, zoom * 0.85))}
             title="Diminuir Zoom"
             className="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50 transition-colors"
           >
@@ -116,23 +116,29 @@ export function Toolbar() {
             {Math.round(zoom * 100)}%
           </span>
           <button
-            onClick={() => setZoom(zoom * 1.15)}
+            onClick={() => setZoom(Math.min(3.5, zoom * 1.15))}
             title="Aumentar Zoom"
             className="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50 transition-colors"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
-          <button
-            onClick={() => {
-              setZoom(1.0);
-              setPan({ x: 0, y: 0 });
-            }}
-            title="Ajustar à Tela (100%)"
-            className="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50 transition-colors border-l border-zinc-700 ml-0.5 pl-1.5"
-          >
-            <RotateCcw className="w-3 h-3" />
-          </button>
         </div>
+
+        {/* Modo Tela Cheia / Zen Mode */}
+        <button
+          onClick={useEditorStore.getState().toggleZenMode}
+          title={useEditorStore.getState().isZenMode ? "Restaurar Painéis (F)" : "Modo Prancha em Tela Cheia (F)"}
+          className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-semibold transition ${
+            useEditorStore.getState().isZenMode
+              ? 'bg-amber-400 text-zinc-950 border-amber-300 shadow-sm'
+              : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/60'
+          }`}
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span className="hidden lg:inline text-[11px]">
+            {useEditorStore.getState().isZenMode ? 'Sair da Tela Cheia' : 'Tela Cheia'}
+          </span>
+        </button>
       </div>
     </div>
   );

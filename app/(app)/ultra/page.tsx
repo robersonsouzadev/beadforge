@@ -41,6 +41,10 @@ function Ultra3DContent() {
     setSystemMode,
     isLeftDrawerOpen,
     isRightDrawerOpen,
+    isLeftSidebarCollapsed,
+    isRightSidebarCollapsed,
+    toggleLeftSidebar,
+    toggleRightSidebar,
     closeDrawers,
   } = useEditorStore();
 
@@ -101,12 +105,12 @@ function Ultra3DContent() {
       }
     }
 
-    const initial3D = engine.buildFromRawVoxels(raw3D, 24, 24, 8, {
-      fillMode: 'hollow',
+    const grid = engine.buildFromRawVoxels(raw3D, 24, 24, 8, {
+      fillMode: 'solid',
       wallThickness: 1,
       pitchMm: 2.6,
     });
-    setGrid3D(initial3D);
+    setGrid3D(grid);
   }, [grid3D, projectId, setGrid3D, setProjectName]);
 
   const handleSave = () => {
@@ -132,46 +136,38 @@ function Ultra3DContent() {
 
   return (
     <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-zinc-950 font-sans select-none">
-      {/* Sub Header */}
-      <div className="h-10 bg-zinc-900/90 border-b border-zinc-800 px-4 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <Box className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-semibold text-zinc-300">Ultra 3D:</span>
-          <span className="text-zinc-400 truncate max-w-xs">{projectName}</span>
-        </div>
+      <Header onSave={handleSave} isSaving={isSaving} saveStatus={saveStatus} currentId={currentId} />
 
-        <div className="flex items-center gap-2">
-          {saveStatus === 'saved' && (
-            <span className="text-emerald-400 flex items-center gap-1 text-[11px] font-medium">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Salvo na Nuvem!
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-lg transition text-xs shadow disabled:opacity-50"
-          >
-            {isSaving ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Save className="w-3.5 h-3.5" />
-            )}
-            <span>{currentId ? 'Salvar Alterações' : 'Salvar Projeto 3D'}</span>
-          </button>
-        </div>
-      </div>
-
-      <Header />
-
-      {/* Área Central de Trabalho */}
+      {/* Área Central de Trabalho 3D com Expansão de Tela */}
       <div className="relative flex flex-1 overflow-hidden w-full max-w-full">
-        {/* Painel Esquerdo Fixo */}
-        <div className="hidden xl:block h-full shrink-0 w-80 max-w-80 overflow-hidden">
+        {/* Painel Esquerdo com Suporte a Colapso Suave */}
+        <div
+          className={`hidden xl:flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out relative ${
+            isLeftSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-80 max-w-80'
+          }`}
+        >
           <UltraSidebar />
         </div>
+
+        {/* Botão Flutuante de Toggle do Painel Esquerdo */}
+        <button
+          type="button"
+          onClick={toggleLeftSidebar}
+          title={isLeftSidebarCollapsed ? 'Expandir Painel do Modelo 3D' : 'Recolher Painel do Modelo 3D'}
+          className={`hidden xl:flex absolute top-1/2 -translate-y-1/2 z-30 w-5 h-12 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-400 hover:text-amber-400 border border-zinc-700/80 rounded-r-md items-center justify-center shadow-lg transition-all duration-300 ${
+            isLeftSidebarCollapsed ? 'left-0' : 'left-80'
+          }`}
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${isLeftSidebarCollapsed ? 'rotate-180' : ''}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
 
         {/* Gaveta Esquerda Mobile */}
         {isLeftDrawerOpen && (
@@ -186,13 +182,37 @@ function Ultra3DContent() {
           </div>
         )}
 
-        {/* Viewport 3D */}
-        <div className="flex flex-col flex-1 h-full overflow-hidden min-w-0 max-w-full pb-14 xl:pb-0">
+        {/* Viewport 3D (Expande para 100% da tela) */}
+        <div className="flex flex-col flex-1 h-full overflow-hidden min-w-0 max-w-full pb-14 xl:pb-0 relative">
           <Viewport3D />
         </div>
 
-        {/* Painel Direito Fixo */}
-        <div className="hidden xl:block h-full shrink-0 w-80 max-w-80 overflow-hidden">
+        {/* Botão Flutuante de Toggle do Painel Direito */}
+        <button
+          type="button"
+          onClick={toggleRightSidebar}
+          title={isRightSidebarCollapsed ? 'Expandir Camadas 3D' : 'Recolher Camadas 3D'}
+          className={`hidden xl:flex absolute top-1/2 -translate-y-1/2 z-30 w-5 h-12 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-400 hover:text-amber-400 border border-zinc-700/80 rounded-l-md items-center justify-center shadow-lg transition-all duration-300 ${
+            isRightSidebarCollapsed ? 'right-0' : 'right-80'
+          }`}
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${isRightSidebarCollapsed ? 'rotate-180' : ''}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+
+        {/* Painel Direito com Suporte a Colapso Suave */}
+        <div
+          className={`hidden xl:flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out relative ${
+            isRightSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-80 max-w-80'
+          }`}
+        >
           <LayerNavigator />
         </div>
 

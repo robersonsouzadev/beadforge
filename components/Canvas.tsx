@@ -49,6 +49,35 @@ export function Canvas() {
   // Tamanho base de cada célula no Canvas (em pixels na escala 1.0)
   const baseCellSize = 22;
 
+  // Ajuste automático da prancha para preencher a tela inteira (Auto-Fit)
+  const fitToScreen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !grid) return;
+    const padding = 48; // margem confortável de 24px em cada lado
+    const availableW = Math.max(100, container.clientWidth - padding);
+    const availableH = Math.max(100, container.clientHeight - padding);
+    const gridPixelW = grid.width * baseCellSize;
+    const gridPixelH = grid.height * baseCellSize;
+
+    const scaleX = availableW / gridPixelW;
+    const scaleY = availableH / gridPixelH;
+    const optimalZoom = Math.min(scaleX, scaleY);
+    const clampedZoom = Math.max(0.05, Math.min(optimalZoom, 2.5));
+
+    setZoom(Number(clampedZoom.toFixed(2)));
+    setPan({ x: 0, y: 0 });
+  }, [grid, setZoom, setPan]);
+
+  const lastGridDimRef = useRef<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    if (grid) {
+      if (!lastGridDimRef.current || lastGridDimRef.current.w !== grid.width || lastGridDimRef.current.h !== grid.height) {
+        lastGridDimRef.current = { w: grid.width, h: grid.height };
+        setTimeout(() => fitToScreen(), 60);
+      }
+    }
+  }, [grid, fitToScreen]);
+
   // Renderização da Grade no Canvas com Estilo Graphite
   const render = useCallback(() => {
     const canvas = canvasRef.current;
@@ -513,6 +542,42 @@ export function Canvas() {
           )}
         </div>
       )}
+
+      {/* Controles Flutuantes de Enquadramento e Tela Cheia (Fundo Direito) */}
+      <div className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 p-1 rounded-xl shadow-2xl z-30">
+        <button
+          type="button"
+          onClick={() => setZoom(zoom * 0.85)}
+          title="Diminuir Zoom (-)"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+
+        <span className="text-xs font-mono font-bold text-zinc-300 px-1 min-w-[42px] text-center tabular-nums">
+          {Math.round(zoom * 100)}%
+        </span>
+
+        <button
+          type="button"
+          onClick={() => setZoom(zoom * 1.15)}
+          title="Aumentar Zoom (+)"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </button>
+
+        <div className="w-px h-4 bg-zinc-800 mx-0.5" />
+
+        <button
+          type="button"
+          onClick={fitToScreen}
+          title="Ajustar Prancha à Tela Inteira (Auto-Fit)"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold text-xs transition shadow-sm"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </button>
+      </div>
     </div>
   );
 }

@@ -75,12 +75,18 @@ interface EditorState {
   history: GridMatrix[];
   historyIndex: number;
 
-  // Responsividade & Gavetas (Mobile / Tablet)
+  // Responsividade, Gavetas & Colapso de Painéis (Workspace Expandido)
   isLeftDrawerOpen: boolean;
   isRightDrawerOpen: boolean;
+  isLeftSidebarCollapsed: boolean;
+  isRightSidebarCollapsed: boolean;
+  isZenMode: boolean;
   toggleLeftDrawer: () => void;
   toggleRightDrawer: () => void;
   closeDrawers: () => void;
+  toggleLeftSidebar: () => void;
+  toggleRightSidebar: () => void;
+  toggleZenMode: () => void;
 
   // --- MÓDULO BEADFORGE ULTRA 3D (Camadas & Voxels) ---
   grid3D: VoxelGrid3D | null;
@@ -172,9 +178,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   isLeftDrawerOpen: false,
   isRightDrawerOpen: false,
+  isLeftSidebarCollapsed: false,
+  isRightSidebarCollapsed: false,
+  isZenMode: false,
   toggleLeftDrawer: () => set((state) => ({ isLeftDrawerOpen: !state.isLeftDrawerOpen, isRightDrawerOpen: false })),
   toggleRightDrawer: () => set((state) => ({ isRightDrawerOpen: !state.isRightDrawerOpen, isLeftDrawerOpen: false })),
   closeDrawers: () => set({ isLeftDrawerOpen: false, isRightDrawerOpen: false }),
+  toggleLeftSidebar: () => set((state) => ({ isLeftSidebarCollapsed: !state.isLeftSidebarCollapsed })),
+  toggleRightSidebar: () => set((state) => ({ isRightSidebarCollapsed: !state.isRightSidebarCollapsed })),
+  toggleZenMode: () => set((state) => {
+    const nextZen = !state.isZenMode;
+    return {
+      isZenMode: nextZen,
+      isLeftSidebarCollapsed: nextZen,
+      isRightSidebarCollapsed: nextZen,
+    };
+  }),
 
   projectName: 'Novo Projeto Hama Beads',
   grid: null,

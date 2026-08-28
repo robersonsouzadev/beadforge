@@ -195,24 +195,42 @@ export function Viewport3D() {
                 <Sparkles className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Onion Skin</span>
               </button>
+            </div>
 
-              {/* Slider de Exploded View */}
-              <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
-                <span className="text-[11px] text-zinc-400 hidden lg:inline">Explosão:</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="25"
-                  step="1"
-                  value={explodedSpacing}
-                  onChange={(e) => setExplodedSpacing(Number(e.target.value))}
-                  className="w-16 sm:w-20 accent-amber-400 h-1 bg-zinc-800 rounded-lg cursor-pointer"
-                  title="Separar camadas verticalmente em milímetros"
-                />
-                <span className="text-[10px] font-mono text-zinc-400 w-7 text-right">
-                  {explodedSpacing}mm
+            {/* Slider de Exploded View */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+              <span className="text-[11px] text-zinc-400 hidden lg:inline">Explosão:</span>
+              <input
+                type="range"
+                min="0"
+                max="25"
+                step="1"
+                value={explodedSpacing}
+                onChange={(e) => setExplodedSpacing(Number(e.target.value))}
+                className="w-16 sm:w-20 accent-amber-400 h-1 bg-zinc-800 rounded-lg cursor-pointer"
+                title="Separar camadas verticalmente em milímetros"
+              />
+              <span className="text-[10px] font-mono text-zinc-400 w-7 text-right">
+                {explodedSpacing}mm
+              </span>
+            </div>
+
+            {/* Modo Tela Cheia / Zen Mode */}
+            <div className="pl-1 border-l border-zinc-800">
+              <button
+                type="button"
+                onClick={useEditorStore.getState().toggleZenMode}
+                title={useEditorStore.getState().isZenMode ? "Restaurar Painéis (F)" : "Modo 3D em Tela Cheia (F)"}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-semibold transition ${
+                  useEditorStore.getState().isZenMode
+                    ? 'bg-amber-400 text-zinc-950 border-amber-300 shadow-sm'
+                    : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/60'
+                }`}
+              >
+                <span className="text-[11px]">
+                  {useEditorStore.getState().isZenMode ? 'Sair da Tela Cheia' : 'Tela Cheia'}
                 </span>
-              </div>
+              </button>
             </div>
           </>
         ) : (

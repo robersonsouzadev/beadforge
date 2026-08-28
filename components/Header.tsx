@@ -16,7 +16,14 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 
-export function Header() {
+interface HeaderProps {
+  onSave?: () => void;
+  isSaving?: boolean;
+  saveStatus?: 'idle' | 'saved' | 'error';
+  currentId?: string;
+}
+
+export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentId }: HeaderProps = {}) {
   const {
     projectName,
     setProjectName,
@@ -382,6 +389,30 @@ export function Header() {
             {systemMode === 'ultra' ? (grid3D?.totalBeads ?? 0) : (grid?.totalBeads ?? 0)}
           </span>
         </button>
+
+        {/* Botão de Salvar Projeto na Nuvem */}
+        {onSave && (
+          <div className="flex items-center gap-1.5">
+            {saveStatus === 'saved' && (
+              <span className="text-emerald-400 hidden sm:flex items-center gap-1 text-[11px] font-medium bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                Salvo!
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={isSaving}
+              className="bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-white border border-zinc-700 font-bold px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs shadow-md transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isSaving ? (
+                <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              <span className="hidden sm:inline">{currentId ? 'Salvar' : 'Salvar na Nuvem'}</span>
+            </button>
+          </div>
+        )}
 
         {/* Menu Dropdown de Exportação */}
         <div className="relative">
