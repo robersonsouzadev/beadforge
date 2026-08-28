@@ -33,10 +33,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { grid, summary, title, options } = body as {
+    const { grid, options } = body as {
       grid: GridMatrix;
-      summary: BeadSummary[];
+      summary?: BeadSummary[];
       title?: string;
+      projectName?: string;
       options?: {
         pageSize?: 'A4' | 'A3' | 'Letter';
         orientation?: 'portrait' | 'landscape';
@@ -53,8 +54,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const doc = generateBeadPDF(grid, summary || [], {
-      title: title || 'BeadForge Pattern',
+    // Use provided summary or compute from grid automatically
+    const summary =
+      body.summary && body.summary.length > 0
+        ? body.summary
+        : Array.from(
+            grid.cells
+              .flat()
+              .filter((c) => !c.isEmpty && c.beadCode)
+              .reduce((map, cell) => {
+                const item = map.get(cell.beadCode) || {
+                  code: cell.beadCode,
+                  name: cell.beadName,
+                  hex: cell.hex,
+                  count: 0,
+                };
+                item.count++;
+                map.set(cell.beadCode, item);
+                return map;
+              }, new Map<string, BeadSummary>())
+              .values()
+          );
+
+    const docTitle = body.title || body.projectName || 'BeadForge Pattern';
+
+    const doc = generateBeadPDF(grid, summary, {
+      title: docTitle,
       pageSize: options?.pageSize ?? 'A4',
       orientation: options?.orientation ?? 'portrait',
       showCodes: options?.showCodes ?? true,
@@ -71,7 +96,7 @@ export async function POST(req: NextRequest) {
       doc.end();
     });
 
-    const safeTitle = (title || 'bead-pattern')
+    const safeTitle = (docTitle || 'bead-pattern')
       .toLowerCase()
       .replace(/[^a-z0-9_-]/g, '_');
 

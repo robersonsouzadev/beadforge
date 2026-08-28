@@ -52,10 +52,12 @@ export function Header() {
 
     try {
       if (systemMode === 'ultra' && grid3D) {
-        // Exporta cada camada Z em sequência
         const targetGrid = grid3D.layers[activeLayerZ]?.grid || grid;
+        if (!targetGrid) throw new Error('Camada 3D não encontrada.');
+
         const payload = {
           projectName: `${projectName} - Camada ${activeLayerZ + 1}`,
+          title: `${projectName} - Camada ${activeLayerZ + 1}`,
           grid: targetGrid,
           summary,
           paletteId,
@@ -72,7 +74,10 @@ export function Header() {
           body: JSON.stringify(payload),
         });
 
-        if (!res.ok) throw new Error('Falha ao gerar arquivo PDF da camada.');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Falha ao gerar arquivo PDF da camada.');
+        }
 
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
@@ -82,10 +87,11 @@ export function Header() {
         document.body.appendChild(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(url);
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       } else if (grid) {
         const payload = {
           projectName,
+          title: projectName,
           grid,
           summary,
           paletteId,
@@ -102,7 +108,10 @@ export function Header() {
           body: JSON.stringify(payload),
         });
 
-        if (!res.ok) throw new Error('Falha ao gerar arquivo PDF.');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Falha ao gerar arquivo PDF.');
+        }
 
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
@@ -112,76 +121,132 @@ export function Header() {
         document.body.appendChild(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(url);
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       }
     } catch (err: any) {
       console.error('Erro na exportação de PDF:', err);
-      alert('Erro ao exportar PDF: ' + err.message);
+      alert(err.message || 'Erro ao exportar PDF.');
     } finally {
       setIsExportingPdf(false);
       setShowExportMenu(false);
     }
   };
 
-  // 2. Exportar Imagem PNG em Alta Resolução
+  // 2. Exportar Imagem PNG em Alta Resolução (via Canvas Blob)
   const handleExportPng = () => {
-    const activeTargetGrid = systemMode === 'ultra' && grid3D ? grid3D.layers[activeLayerZ]?.grid : grid;
-    if (!activeTargetGrid) return;
+    const activeTargetGrid =
+      systemMode === 'ultra' && grid3D
+        ? grid3D.layers[activeLayerZ]?.grid
+        : grid;
 
-    const cellSize = 30;
-    const offCanvas = document.createElement('canvas');
-    offCanvas.width = activeTargetGrid.width * cellSize;
-    offCanvas.height = activeTargetGrid.height * cellSize;
-    const ctx = offCanvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, offCanvas.width, offCanvas.height);
-
-    for (let r = 0; r < activeTargetGrid.height; r++) {
-      for (let c = 0; c < activeTargetGrid.width; c++) {
-        const cell = activeTargetGrid.cells[r][c];
-        const x = c * cellSize;
-        const y = r * cellSize;
-
-        if (cell.isEmpty) {
-          ctx.fillStyle = '#f8fafc';
-          ctx.fillRect(x, y, cellSize, cellSize);
-        } else {
-          ctx.fillStyle = cell.hex;
-          ctx.fillRect(x, y, cellSize, cellSize);
-
-          ctx.fillStyle = cell.textColor;
-          ctx.font = 'bold 10px monospace';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(cell.beadCode, x + cellSize / 2, y + cellSize / 2);
-        }
-
-        ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, cellSize, cellSize);
-      }
+    if (!activeTargetGrid) {
+      alert('Nenhum molde de beads carregado para exportar imagem.');
+      return;
     }
 
-    const dataUrl = offCanvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `${projectName.toLowerCase().replace(/\s+/g, '_')}_molde_hd.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setShowExportMenu(false);
+    try {
+      const cellSize = 32;
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = activeTargetGrid.width * cellSize;
+      offCanvas.height = activeTargetGrid.height * cellSize;
+      const ctx = offCanvas.getContext('2d');
+      if (!ctx) throw new Error('Não foi possível inicializar contexto 2D para renderização.');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+
+      for (let r = 0; r < activeTargetGrid.height; r++) {
+        for (let c = 0; c < activeTargetGrid.width; c++) {
+          const cell = activeTargetGrid.cells[r][c];
+          const x = c * cellSize;
+          const y = r * cellSize;
+
+          if (cell.isEmpty) {
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(x, y, cellSize, cellSize);
+          } else {
+            ctx.fillStyle = cell.hex;
+            ctx.fillRect(x, y, cellSize, cellSize);
+
+            ctx.fillStyle = cell.textColor || '#000000';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(cell.beadCode, x + cellSize / 2, y + cellSize / 2);
+          }
+
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+        }
+      }
+
+      offCanvas.toBlob((blob) => {
+        if (!blob) {
+          alert('Erro ao gerar arquivo de imagem PNG.');
+          return;
+        }
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const suffix = systemMode === 'ultra' ? `_camada_${activeLayerZ + 1}` : '';
+        a.download = `${projectName.toLowerCase().replace(/\s+/g, '_')}${suffix}_hd.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      }, 'image/png');
+    } catch (err: any) {
+      console.error('Erro ao gerar imagem PNG:', err);
+      alert('Erro ao exportar imagem PNG: ' + err.message);
+    } finally {
+      setShowExportMenu(false);
+    }
   };
 
   // 3. Exportar Lista de Materiais em CSV
   const handleExportCsv = () => {
-    if (!summary || summary.length === 0) return;
+    const activeTargetGrid =
+      systemMode === 'ultra' && grid3D
+        ? grid3D.layers[activeLayerZ]?.grid
+        : grid;
+
+    if (!activeTargetGrid) {
+      alert('Nenhum projeto ativo para exportar lista de materiais.');
+      return;
+    }
+
+    // Calcula sumário caso não exista no estado
+    const currentSummary =
+      summary && summary.length > 0
+        ? summary
+        : Array.from(
+            activeTargetGrid.cells
+              .flat()
+              .filter((c) => !c.isEmpty && c.beadCode)
+              .reduce((map, cell) => {
+                const item = map.get(cell.beadCode) || {
+                  code: cell.beadCode,
+                  name: cell.beadName,
+                  hex: cell.hex,
+                  count: 0,
+                };
+                item.count++;
+                map.set(cell.beadCode, item);
+                return map;
+              }, new Map<string, { code: string; name: string; hex: string; count: number }>())
+              .values()
+          );
+
+    if (currentSummary.length === 0) {
+      alert('Nenhum bead colorido encontrado no projeto.');
+      return;
+    }
 
     let csvContent = 'Codigo,Nome_Cor,Hex,Quantidade,Porcentagem\n';
-    const total = grid?.totalBeads || 1;
+    const total = activeTargetGrid.totalBeads || 1;
 
-    summary.forEach((item) => {
+    currentSummary.forEach((item) => {
       const pct = ((item.count / total) * 100).toFixed(1);
       csvContent += `"${item.code}","${item.name}","${item.hex}",${item.count},${pct}%\n`;
     });
@@ -194,7 +259,7 @@ export function Header() {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    window.URL.revokeObjectURL(url);
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     setShowExportMenu(false);
   };
 
