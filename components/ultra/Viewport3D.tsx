@@ -15,6 +15,9 @@ import {
   Eraser,
   Box,
   LayoutGrid,
+  PaintBucket,
+  Pipette,
+  ChevronDown,
 } from 'lucide-react';
 
 function PegboardBaseHelper({ width, height, pitch }: { width: number; height: number; pitch: number }) {
@@ -51,10 +54,16 @@ export function Viewport3D() {
     set3DTool,
     setIsAssemblyGuideOpen,
     highlightBeadCode,
+    activeTool,
+    setActiveTool,
+    selectedBead,
+    setSelectedBead,
+    activePalette,
   } = useEditorStore();
 
   const [centerViewMode, setCenterViewMode] = useState<'3d' | '2d_layer'>('3d');
   const [layer2dViewMode, setLayer2dViewMode] = useState<'pattern' | 'assembly'>('pattern');
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   const currentLayer = grid3D ? grid3D.layers[activeLayerZ] || grid3D.layers[0] : null;
 
@@ -234,29 +243,189 @@ export function Viewport3D() {
             </div>
           </>
         ) : (
-          /* Controles do Molde 2D da Camada */
-          <div className="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
-            <button
-              onClick={() => setLayer2dViewMode('pattern')}
-              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                layer2dViewMode === 'pattern'
-                  ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              Com Códigos
-            </button>
-            <button
-              onClick={() => setLayer2dViewMode('assembly')}
-              className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                layer2dViewMode === 'assembly'
-                  ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              Pixel Art
-            </button>
-          </div>
+          /* Controles e Ferramentas Completas de Pintura 2D da Camada */
+          <>
+            {/* Ferramentas de Pintura 2D */}
+            <div className="flex items-center gap-1 px-2 border-x border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setActiveTool('brush')}
+                className={`p-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                  activeTool === 'brush'
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Pincel (B) — Pintar célula com a cor selecionada"
+              >
+                <Paintbrush className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Pincel</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTool('bucket')}
+                className={`p-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                  activeTool === 'bucket'
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Balde de Tinta (G) — Preencher área conectada"
+              >
+                <PaintBucket className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Balde</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTool('dropper')}
+                className={`p-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                  activeTool === 'dropper'
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Conta-Gotas (I) — Copiar cor da célula clicada"
+              >
+                <Pipette className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Conta-Gotas</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTool('eraser')}
+                className={`p-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                  activeTool === 'eraser'
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                }`}
+                title="Borracha (E) — Apagar bead da camada"
+              >
+                <Eraser className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Borracha</span>
+              </button>
+            </div>
+
+            {/* Amostra e Seletor de Cor Ativa com Popover */}
+            {selectedBead && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsPaletteOpen(!isPaletteOpen)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-800/90 hover:bg-zinc-750 border border-zinc-700/80 transition-colors"
+                  title="Clique para escolher outra cor da paleta"
+                >
+                  <div
+                    className="w-4 h-4 rounded-sm border border-zinc-600 shadow-sm shrink-0"
+                    style={{ backgroundColor: selectedBead.hex }}
+                  />
+                  <span className="font-mono font-bold text-amber-400 text-[11px]">
+                    {selectedBead.code}
+                  </span>
+                  <span className="text-zinc-300 text-[11px] max-w-[80px] sm:max-w-[110px] truncate hidden md:inline">
+                    {selectedBead.name}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-zinc-400 ml-0.5" />
+                </button>
+
+                {/* Popover da Paleta de Cores Completa */}
+                {isPaletteOpen && (
+                  <div className="absolute left-0 top-full mt-2 w-72 max-h-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-3 z-50 overflow-y-auto animate-scale-in">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-800">
+                      <span className="text-xs font-bold text-zinc-200 uppercase tracking-wide">
+                        Paleta de Cores ({activePalette.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsPaletteOpen(false)}
+                        className="text-zinc-400 hover:text-white p-0.5"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-6 gap-1.5">
+                      {activePalette.map((b) => {
+                        const isSelected = selectedBead?.code === b.code;
+                        return (
+                          <button
+                            key={b.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedBead(b);
+                              setIsPaletteOpen(false);
+                            }}
+                            className={`group relative aspect-square rounded-md border flex items-center justify-center transition-all ${
+                              isSelected
+                                ? 'border-amber-400 ring-2 ring-amber-400/50 scale-105 z-10'
+                                : 'border-zinc-700/80 hover:border-zinc-400 hover:scale-105'
+                            }`}
+                            style={{ backgroundColor: b.hex }}
+                            title={`${b.name} [${b.code}]`}
+                          >
+                            <span
+                              className="text-[8px] font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{
+                                color:
+                                  (b.rgb.r * 299 + b.rgb.g * 587 + b.rgb.b * 114) / 1000 >= 140
+                                    ? '#000000'
+                                    : '#ffffff',
+                              }}
+                            >
+                              {b.code}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Alternador de Modo de Visualização 2D */}
+            <div className="flex items-center gap-1 pl-1 border-l border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setLayer2dViewMode('pattern')}
+                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                  layer2dViewMode === 'pattern'
+                    ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+                title="Modo Molde — Exibir códigos de letras/números nos beads"
+              >
+                Códigos
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayer2dViewMode('assembly')}
+                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
+                  layer2dViewMode === 'assembly'
+                    ? 'bg-zinc-800 text-amber-400 font-bold border border-zinc-700'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+                title="Modo Arte — Exibir cores sólidas com relevo cilíndrico"
+              >
+                Pixel Art
+              </button>
+            </div>
+
+            {/* Modo Tela Cheia / Zen Mode */}
+            <div className="pl-1 border-l border-zinc-800">
+              <button
+                type="button"
+                onClick={useEditorStore.getState().toggleZenMode}
+                title={useEditorStore.getState().isZenMode ? "Restaurar Painéis (F)" : "Modo em Tela Cheia (F)"}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-semibold transition ${
+                  useEditorStore.getState().isZenMode
+                    ? 'bg-amber-400 text-zinc-950 border-amber-300 shadow-sm'
+                    : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700/60'
+                }`}
+              >
+                <span className="text-[11px]">
+                  {useEditorStore.getState().isZenMode ? 'Sair da Tela Cheia' : 'Tela Cheia'}
+                </span>
+              </button>
+            </div>
+          </>
         )}
       </div>
 

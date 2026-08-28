@@ -626,8 +626,35 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   bucketFillAt: (row, col) => {
-    const { grid, selectedBead, history, historyIndex } = get();
+    const { grid, selectedBead, history, historyIndex, systemMode, activeLayerZ, grid3D } = get();
     if (!grid || !selectedBead) return;
+
+    if (systemMode === 'ultra' && grid3D) {
+      const targetZ = activeLayerZ;
+      if (targetZ < 0 || targetZ >= grid3D.layers.length) return;
+      const layer = grid3D.layers[targetZ];
+      if (layer.isLocked) return;
+
+      const newGrid = floodFill(layer.grid, row, col, selectedBead);
+      const newLayers = [...grid3D.layers];
+      newLayers[targetZ] = {
+        ...layer,
+        grid: newGrid,
+        beadCount: newGrid.totalBeads,
+        isEmpty: newGrid.totalBeads === 0,
+      };
+
+      let grandTotal = 0;
+      for (const l of newLayers) grandTotal += l.beadCount;
+      const updatedGrid3D = { ...grid3D, layers: newLayers, totalBeads: grandTotal };
+
+      set({
+        grid3D: updatedGrid3D,
+        grid: newGrid,
+        summary: buildBeadSummary(newGrid, 'count'),
+      });
+      return;
+    }
 
     const newGrid = floodFill(grid, row, col, selectedBead);
     const newSummary = buildBeadSummary(newGrid, 'count');
