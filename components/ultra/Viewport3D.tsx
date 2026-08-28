@@ -65,16 +65,16 @@ export function Viewport3D() {
         <Canvas
           shadows
           frameloop="demand"
-          camera={{ position: [0, -60, 80], fov: 45, up: [0, 0, 1] }}
+          camera={{ position: [0, -42, 45], fov: 38, up: [0, 0, 1] }}
           className="w-full h-full"
         >
-          <ambientLight intensity={0.75} />
-          <directionalLight position={[60, -80, 100]} intensity={1.2} castShadow />
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[60, -80, 100]} intensity={1.3} castShadow />
           <directionalLight position={[-60, 80, -40]} intensity={0.4} />
           <pointLight position={[0, 0, 80]} intensity={0.5} />
 
           <Suspense fallback={null}>
-            <Center>
+            <Center top={false}>
               {grid3D && (
                 <>
                   <BeadRenderer3D grid3D={grid3D} />
@@ -92,8 +92,8 @@ export function Viewport3D() {
             makeDefault
             enableDamping
             dampingFactor={0.08}
-            minDistance={15}
-            maxDistance={350}
+            minDistance={8}
+            maxDistance={250}
           />
         </Canvas>
       ) : currentLayer ? (

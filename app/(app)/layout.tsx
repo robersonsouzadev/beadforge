@@ -21,7 +21,7 @@ export default async function AppLayout({
   const sub = await getUserSubscription(session.user.id);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-amber-400/30 selection:text-amber-200">
+    <div className="h-screen max-h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 flex flex-col selection:bg-amber-400/30 selection:text-amber-200">
       <AppHeader
         user={{
           name: session.user.name,
@@ -30,7 +30,7 @@ export default async function AppLayout({
         }}
         isPro={sub.isPro}
       />
-      <main className="flex-1 flex flex-col">{children}</main>
+      <main className="flex-1 flex flex-col h-[calc(100vh-48px)] overflow-hidden w-full max-w-full">{children}</main>
     </div>
   );
 }

@@ -54,7 +54,7 @@ export function Canvas() {
   const fitToScreen = useCallback(() => {
     const container = containerRef.current;
     if (!container || !grid) return;
-    const padding = 48; // margem confortável de 24px em cada lado
+    const padding = 16; // Margem mínima (8px em cada lado) para máximo aproveitamento da tela
     const availableW = Math.max(100, container.clientWidth - padding);
     const availableH = Math.max(100, container.clientHeight - padding);
     const gridPixelW = grid.width * baseCellSize;

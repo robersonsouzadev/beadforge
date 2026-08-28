@@ -122,8 +122,6 @@ function Editor2DContent() {
 
   return (
     <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-zinc-950 font-sans select-none">
-      <Header onSave={handleSave} isSaving={isSaving} saveStatus={saveStatus} currentId={currentId} />
-
       {/* Área Central de Trabalho com Expansão em Tela Cheia */}
       <div className="relative flex flex-1 overflow-hidden w-full max-w-full">
         {/* Painel Esquerdo com Suporte a Colapso Suave */}
