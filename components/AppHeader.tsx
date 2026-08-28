@@ -14,6 +14,7 @@ import {
   ChevronDown,
   User as UserIcon,
   Zap,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -79,6 +80,20 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
               </Link>
             );
           })}
+
+          {user.email?.toLowerCase().includes('robersonsouza@outlook.com') && (
+            <Link
+              href="/admin"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
+                pathname.startsWith('/admin')
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                  : 'text-rose-400/90 hover:text-rose-300 hover:bg-rose-500/10'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin</span>
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -137,6 +152,17 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
                 <CreditCard className="w-4 h-4 text-amber-400" />
                 <span>Assinatura & Faturamento</span>
               </Link>
+
+              {user.email?.toLowerCase().includes('robersonsouza@outlook.com') && (
+                <Link
+                  href="/admin"
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 font-semibold transition"
+                >
+                  <Sparkles className="w-4 h-4 text-rose-400" />
+                  <span>Painel do Administrador</span>
+                </Link>
+              )}
 
               <div className="border-t border-zinc-800/80 my-1" />
 

@@ -49,17 +49,24 @@ function LoginForm() {
         callbackURL: redirectUrl,
       });
       if (res?.error) {
-        setErrorMessage(
-          res.error.message ||
-            `Login com ${provider === 'google' ? 'Google' : 'GitHub'} ainda não está configurado no servidor. Use seu Email e Senha.`
-        );
+        if (res.error.message?.toLowerCase().includes('provider not found')) {
+          setErrorMessage(
+            `O login com ${provider === 'google' ? 'Google' : 'GitHub'} ainda não teve as chaves OAuth cadastradas no servidor. Entre usando seu Email e Senha abaixo!`
+          );
+        } else {
+          setErrorMessage(res.error.message || `Falha ao autenticar com ${provider}.`);
+        }
         setIsLoading(false);
       }
     } catch (err: any) {
-      setErrorMessage(
-        err.message ||
-          `Login com ${provider === 'google' ? 'Google' : 'GitHub'} não está configurado. Use seu Email e Senha.`
-      );
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('provider not found')) {
+        setErrorMessage(
+          `O login com ${provider === 'google' ? 'Google' : 'GitHub'} ainda não teve as chaves OAuth cadastradas no servidor. Entre usando seu Email e Senha abaixo!`
+        );
+      } else {
+        setErrorMessage(msg || `Falha ao autenticar com ${provider}.`);
+      }
       setIsLoading(false);
     }
   };
