@@ -13,6 +13,12 @@ export const auth = betterAuth({
       verification: schema.verification,
     },
   }),
+  baseURL: process.env.BETTER_AUTH_URL || 'https://app.hamabeadsbrasil.com.br',
+  trustedOrigins: [
+    'https://app.hamabeadsbrasil.com.br',
+    'https://hamabeadsbrasil.com.br',
+    'http://localhost:3000',
+  ],
   emailAndPassword: {
     enabled: true,
   },
