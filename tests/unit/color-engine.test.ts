@@ -76,3 +76,54 @@ describe('PaletteMatcher', () => {
     expect(second).toBe(first);
   });
 });
+
+describe('createBackgroundMask (BFS Flood Fill)', () => {
+  it('remove o fundo branco externo mas PRESERVA o branco interno protegido por contorno preto', async () => {
+    const { createBackgroundMask } = await import('../../core/image/background-detector');
+    // Imagem 5x5:
+    // W W W W W
+    // W B B B W
+    // W B W B W   <-- o pixel central (2,2) é BRANCO interno!
+    // W B B B W
+    // W W W W W
+    const width = 5;
+    const height = 5;
+    const buf = Buffer.alloc(width * height * 3);
+
+    const setPixel = (x: number, y: number, r: number, g: number, b: number) => {
+      const idx = (y * width + x) * 3;
+      buf[idx] = r;
+      buf[idx + 1] = g;
+      buf[idx + 2] = b;
+    };
+
+    // Preenche tudo de branco
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        setPixel(x, y, 255, 255, 255);
+      }
+    }
+
+    // Cria contorno preto 3x3
+    for (let x = 1; x <= 3; x++) {
+      setPixel(x, 1, 0, 0, 0);
+      setPixel(x, 3, 0, 0, 0);
+    }
+    setPixel(1, 2, 0, 0, 0);
+    setPixel(3, 2, 0, 0, 0);
+    // (2,2) continua sendo branco 255,255,255
+
+    const mask = createBackgroundMask(buf, width, height, { r: 255, g: 255, b: 255 }, 10.0);
+
+    // Bordas externas são fundo (true)
+    expect(mask[0][0]).toBe(true);
+    expect(mask[0][4]).toBe(true);
+    expect(mask[4][0]).toBe(true);
+
+    // Contorno preto NÃO é fundo (false)
+    expect(mask[1][1]).toBe(false);
+
+    // BRANCO INTERNO NÃO É FUNDO (false) -> DEVE SER PRESERVADO COMO BEAD BRANCO!
+    expect(mask[2][2]).toBe(false);
+  });
+});
