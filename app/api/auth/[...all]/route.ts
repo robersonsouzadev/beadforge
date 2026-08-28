@@ -43,28 +43,50 @@ async function seedAdminUser() {
       }
     }
 
-    // 2. Guarantee Account Record with exact password hash
+    // 2. Guarantee Account Record with issuer + password hash
     const [existingAccount] = await db
       .select()
       .from(account)
-      .where(and(eq(account.userId, userId), eq(account.providerId, 'credential')))
+      .where(
+        and(
+          eq(account.userId, userId),
+          eq(account.providerId, 'credential'),
+          eq(account.issuer, 'local:credential')
+        )
+      )
       .limit(1);
 
     if (!existingAccount) {
+      // Delete any old account records without issuer for this user
+      await db
+        .delete(account)
+        .where(
+          and(
+            eq(account.userId, userId),
+            eq(account.providerId, 'credential')
+          )
+        );
+
       await db.insert(account).values({
         id: crypto.randomUUID(),
         accountId: userId,
         providerId: 'credential',
+        issuer: 'local:credential',
         userId: userId,
         password: hashedPassword,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
     } else {
-      // Force update password hash so it is 100% guaranteed to match
+      // Force update password hash and issuer
       await db
         .update(account)
-        .set({ password: hashedPassword, updatedAt: new Date() })
+        .set({
+          password: hashedPassword,
+          issuer: 'local:credential',
+          accountId: userId,
+          updatedAt: new Date(),
+        })
         .where(eq(account.id, existingAccount.id));
     }
 
@@ -93,7 +115,7 @@ async function seedAdminUser() {
     }
 
     adminSeeded = true;
-    console.log('✅ Admin user, password and PRO subscription synced successfully.');
+    console.log('✅ Admin user, credential account (with issuer) and PRO subscription synced.');
   } catch (err: any) {
     console.warn('Admin seed check:', err?.message || err);
   }

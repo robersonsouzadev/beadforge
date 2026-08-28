@@ -46,6 +46,7 @@ export async function ensureDbTables() {
         "id" text PRIMARY KEY NOT NULL,
         "account_id" text NOT NULL,
         "provider_id" text NOT NULL,
+        "issuer" text,
         "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
         "access_token" text,
         "refresh_token" text,
@@ -57,6 +58,11 @@ export async function ensureDbTables() {
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
+      -- Migration: add issuer column if table already exists without it
+      ALTER TABLE "account" ADD COLUMN IF NOT EXISTS "issuer" text;
+      -- Backfill: set issuer for existing credential accounts
+      UPDATE "account" SET "issuer" = 'local:credential'
+        WHERE "provider_id" = 'credential' AND "issuer" IS NULL;
       CREATE TABLE IF NOT EXISTS "verification" (
         "id" text PRIMARY KEY NOT NULL,
         "identifier" text NOT NULL,
