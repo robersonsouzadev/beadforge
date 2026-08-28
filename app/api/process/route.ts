@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Redimensionamento via Sharp com Escala e Posição X/Y
-    const { pixels, width, height } = await downsampleImage(inputBuffer, {
+    const { pixels, width, height, hasAlpha } = await downsampleImage(inputBuffer, {
       targetWidth: gridWidth,
       targetHeight: gridHeight,
       fit: 'contain',
@@ -55,10 +55,22 @@ export async function POST(req: NextRequest) {
       brightnessAdjust: brightness,
     });
 
-    // 2. Detecção e máscara de fundo (se ativado)
+    // 2. Detecção e máscara de fundo
     let emptyMask: boolean[][] | undefined;
-    if (removeBackground) {
-      const bgColor = detectBackgroundColor(pixels, width, height);
+    if (hasAlpha) {
+      // Se a imagem possui transparência nativa (PNG/WebP), o canal alpha define o fundo sem falsos positivos
+      emptyMask = Array.from({ length: height }, () => Array(width).fill(false));
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          if (pixels[idx + 3] < 128) {
+            emptyMask[y][x] = true;
+          }
+        }
+      }
+    } else if (removeBackground) {
+      // Se a imagem for opaca (JPEG) e o usuário ativou remoção de fundo
+      const bgColor = detectBackgroundColor(pixels, width, height, 4);
       emptyMask = createBackgroundMask(pixels, width, height, bgColor, bgTolerance);
     }
 

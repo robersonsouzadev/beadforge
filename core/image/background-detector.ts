@@ -13,12 +13,14 @@ export function detectBackgroundColor(
   pixels: Buffer,
   width: number,
   height: number,
-  channels: number = 3
+  channels?: number
 ): { r: number; g: number; b: number } {
+  const actualChannels = channels || (pixels.length >= width * height * 4 ? 4 : 3);
   const borderPixels = new Map<string, number>();
 
   const addPixel = (row: number, col: number) => {
-    const idx = (row * width + col) * channels;
+    const idx = (row * width + col) * actualChannels;
+    if (actualChannels === 4 && pixels[idx + 3] < 128) return; // ignora pixels transparentes
     const r = pixels[idx];
     const g = pixels[idx + 1];
     const b = pixels[idx + 2];
@@ -64,6 +66,7 @@ export function createBackgroundMask(
   bgColor: { r: number; g: number; b: number },
   threshold: number = 5.0
 ): boolean[][] {
+  const actualChannels = pixels.length >= width * height * 4 ? 4 : 3;
   const bgLab = rgbToLab(bgColor.r, bgColor.g, bgColor.b);
 
   // Matriz inicial de máscara (false = não é fundo)
@@ -76,8 +79,26 @@ export function createBackgroundMask(
   );
 
   const isColorMatch = (x: number, y: number): boolean => {
-    const idx = (y * width + x) * 3;
-    const pixelLab = rgbToLab(pixels[idx], pixels[idx + 1], pixels[idx + 2]);
+    const idx = (y * width + x) * actualChannels;
+    if (actualChannels === 4 && pixels[idx + 3] < 128) {
+      return true; // Transparente é sempre fundo
+    }
+
+    const r = pixels[idx];
+    const g = pixels[idx + 1];
+    const b = pixels[idx + 2];
+
+    const rDiff = Math.abs(r - bgColor.r);
+    const gDiff = Math.abs(g - bgColor.g);
+    const bDiff = Math.abs(b - bgColor.b);
+
+    const maxRgbDiff = Math.max(rDiff, gDiff, bDiff);
+    // Limite estrito para evitar vazamento através de linhas finas
+    if (maxRgbDiff > Math.max(14, threshold * 2.5)) {
+      return false;
+    }
+
+    const pixelLab = rgbToLab(r, g, b);
     const dist = deltaE00(pixelLab, bgLab);
     return dist < threshold;
   };

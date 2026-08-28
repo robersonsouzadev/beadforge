@@ -63,13 +63,15 @@ export async function downsampleImage(
     .resize(intermediateW, intermediateH, {
       kernel: sharp.kernel.lanczos3,
       fit: fit,
-      background: { r: bg.r, g: bg.g, b: bg.b, alpha: 1 },
+      background: hasAlpha
+        ? { r: 0, g: 0, b: 0, alpha: 0 }
+        : { r: bg.r, g: bg.g, b: bg.b, alpha: 1 },
     })
-    .removeAlpha()
+    .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // Amostragem com suporte total a Escala e Posicionamento X/Y
+  // Amostragem com suporte total a Escala, Posicionamento X/Y e Canal Alpha
   const finalPixels = resampleWithTransform(
     intermediate.data,
     intermediate.info.width,
@@ -79,7 +81,8 @@ export async function downsampleImage(
     scale,
     offsetX,
     offsetY,
-    bg
+    bg,
+    hasAlpha
   );
 
   return {
@@ -91,7 +94,7 @@ export async function downsampleImage(
 }
 
 /**
- * Resampling com transformação afim (Escala + Translação X/Y)
+ * Resampling com transformação afim (Escala + Translação X/Y) mantendo RGBA
  */
 function resampleWithTransform(
   src: Buffer,
@@ -102,9 +105,10 @@ function resampleWithTransform(
   scale: number,
   offsetXPercent: number,
   offsetYPercent: number,
-  bg: { r: number; g: number; b: number }
+  bg: { r: number; g: number; b: number },
+  hasAlpha: boolean
 ): Buffer {
-  const channels = 3;
+  const channels = 4;
   const dst = Buffer.alloc(dstW * dstH * channels);
 
   // Converte deslocamento percentual para pixels de destino
@@ -134,11 +138,13 @@ function resampleWithTransform(
         dst[dstIdx] = src[srcIdx];
         dst[dstIdx + 1] = src[srcIdx + 1];
         dst[dstIdx + 2] = src[srcIdx + 2];
+        dst[dstIdx + 3] = src[srcIdx + 3];
       } else {
-        // Fora dos limites = cor de fundo
+        // Fora dos limites = cor de fundo / transparência
         dst[dstIdx] = bg.r;
         dst[dstIdx + 1] = bg.g;
         dst[dstIdx + 2] = bg.b;
+        dst[dstIdx + 3] = hasAlpha ? 0 : 255;
       }
     }
   }

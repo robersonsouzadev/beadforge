@@ -13,17 +13,25 @@ function clamp8(v: number): number {
  * Isso evita completamente os problemas de escurecimento artificial (gamma darkening).
  */
 export function applyDithering(
-  pixels: Buffer, // sRGB raw bytes [R, G, B, R, G, B, ...]
+  pixels: Buffer, // sRGB raw bytes [R, G, B, A, ...] ou [R, G, B, ...]
   width: number,
   height: number,
   matcher: PaletteMatcher,
   mode: DitherMode = 'floyd-steinberg',
   emptyMask?: boolean[][]
 ): BeadColor[][] {
+  const channels = pixels.length >= width * height * 4 ? 4 : 3;
+
   // Converte buffer de pixels para array Float64 em espaço linear [0.0 - 1.0]
   const linear = new Float64Array(width * height * 3);
-  for (let i = 0; i < width * height * 3; i++) {
-    linear[i] = srgbChannelToLinear(pixels[i]);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcIdx = (y * width + x) * channels;
+      const linIdx = (y * width + x) * 3;
+      linear[linIdx] = srgbChannelToLinear(pixels[srcIdx]);
+      linear[linIdx + 1] = srgbChannelToLinear(pixels[srcIdx + 1]);
+      linear[linIdx + 2] = srgbChannelToLinear(pixels[srcIdx + 2]);
+    }
   }
 
   const grid: BeadColor[][] = [];
@@ -31,10 +39,14 @@ export function applyDithering(
   for (let y = 0; y < height; y++) {
     grid[y] = [];
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 3;
+      const srcIdx = (y * width + x) * channels;
+      const linIdx = (y * width + x) * 3;
+      const alpha = channels === 4 ? pixels[srcIdx + 3] : 255;
 
-      // Se for célula de fundo mascarada como vazia
-      if (emptyMask && emptyMask[y] && emptyMask[y][x]) {
+      // Se for célula de fundo mascarada como vazia OU pixel transparente com alpha < 128
+      const isCellEmpty = (emptyMask && emptyMask[y] && emptyMask[y][x]) || alpha < 128;
+
+      if (isCellEmpty) {
         grid[y][x] = {
           code: '',
           name: 'Empty',
@@ -47,9 +59,9 @@ export function applyDithering(
       }
 
       // Converte do acumulador linear de volta para sRGB (0-255) para matching
-      const r8 = clamp8(linearToSrgbChannel(linear[idx]) * 255);
-      const g8 = clamp8(linearToSrgbChannel(linear[idx + 1]) * 255);
-      const b8 = clamp8(linearToSrgbChannel(linear[idx + 2]) * 255);
+      const r8 = clamp8(linearToSrgbChannel(linear[linIdx]) * 255);
+      const g8 = clamp8(linearToSrgbChannel(linear[linIdx + 1]) * 255);
+      const b8 = clamp8(linearToSrgbChannel(linear[linIdx + 2]) * 255);
 
       const matchedBead = matcher.findNearest(r8, g8, b8);
       grid[y][x] = matchedBead;
@@ -61,16 +73,18 @@ export function applyDithering(
       const beadLinG = srgbChannelToLinear(matchedBead.rgb.g);
       const beadLinB = srgbChannelToLinear(matchedBead.rgb.b);
 
-      const errR = linear[idx] - beadLinR;
-      const errG = linear[idx + 1] - beadLinG;
-      const errB = linear[idx + 2] - beadLinB;
+      const errR = linear[linIdx] - beadLinR;
+      const errG = linear[linIdx + 1] - beadLinG;
+      const errB = linear[linIdx + 2] - beadLinB;
 
       const diffuse = (dx: number, dy: number, factor: number) => {
         const nx = x + dx;
         const ny = y + dy;
         if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-          // Não difunde erro para células marcadas como vazias
-          if (emptyMask && emptyMask[ny] && emptyMask[ny][nx]) return;
+          const nSrcIdx = (ny * width + nx) * channels;
+          const nAlpha = channels === 4 ? pixels[nSrcIdx + 3] : 255;
+          // Não difunde erro para células vazias ou transparentes
+          if ((emptyMask && emptyMask[ny] && emptyMask[ny][nx]) || nAlpha < 128) return;
 
           const ni = (ny * width + nx) * 3;
           linear[ni] += errR * factor;
