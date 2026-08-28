@@ -219,12 +219,12 @@ export function Canvas() {
             }
           } else {
             // MODO MOLDE / IMPRESSÃO: Renderiza código alfanumérico com contraste WCAG
-            if (currentCellSize >= 13 && cell.beadCode) {
-              const fontSize = Math.max(8, Math.floor(currentCellSize * 0.38));
-              ctx.font = `600 ${fontSize}px "JetBrains Mono", monospace`;
+            if (currentCellSize >= 5.5 && cell.beadCode) {
+              const fontSize = Math.max(5, Math.floor(currentCellSize * 0.44));
+              ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
-              ctx.fillStyle = isHighlighted ? cell.textColor : 'rgba(100,100,100,0.3)';
+              ctx.fillStyle = isHighlighted ? (cell.textColor || '#000000') : 'rgba(100,100,100,0.3)';
               ctx.fillText(
                 cell.beadCode,
                 cellX + currentCellSize / 2,
@@ -323,13 +323,13 @@ export function Canvas() {
     ctx.strokeRect(originX, originY, gridPixelW, gridPixelH);
 
     // 5. Réguas e Numeração de Linhas/Colunas
-    if (showGridNumbers && currentCellSize >= 10) {
+    if (showGridNumbers && currentCellSize >= 5) {
       ctx.fillStyle = '#A1A1AA';
       ctx.font = '500 9px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
 
       // Numeração de colunas no topo
-      for (let c = 0; c < grid.width; c += (currentCellSize >= 18 ? 1 : 5)) {
+      for (let c = 0; c < grid.width; c += (currentCellSize >= 15 ? 1 : 5)) {
         const cx = originX + c * currentCellSize + currentCellSize / 2;
         if (cx > 0 && cx < rect.width) {
           ctx.fillText(String(c + 1), cx, originY - 4);
@@ -338,7 +338,7 @@ export function Canvas() {
 
       // Numeração de linhas na esquerda
       ctx.textAlign = 'right';
-      for (let r = 0; r < grid.height; r += (currentCellSize >= 18 ? 1 : 5)) {
+      for (let r = 0; r < grid.height; r += (currentCellSize >= 15 ? 1 : 5)) {
         const ry = originY + r * currentCellSize + currentCellSize / 2 + 3;
         if (ry > 0 && ry < rect.height) {
           ctx.fillText(String(r + 1), originX - 4, ry);

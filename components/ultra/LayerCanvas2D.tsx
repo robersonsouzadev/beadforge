@@ -176,8 +176,8 @@ export function LayerCanvas2D({
             }
           } else {
             // Modo Molde: Código da cor com contraste
-            if (currentCellSize >= 11 && cell.beadCode) {
-              const fontSize = Math.max(8, Math.floor(currentCellSize * 0.38));
+            if (currentCellSize >= 5.5 && cell.beadCode) {
+              const fontSize = Math.max(5, Math.floor(currentCellSize * 0.44));
               ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
