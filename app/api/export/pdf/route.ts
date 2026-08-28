@@ -1,12 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { generateBeadPDF } from '@/core/export/pdf-generator';
 import type { GridMatrix } from '@/core/schemas/grid';
 import type { BeadSummary } from '@/core/schemas/project';
+import { auth } from '@/lib/auth';
+import { getUserSubscription } from '@/lib/subscription';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Você precisa estar autenticado para exportar PDF.' },
+        { status: 401 }
+      );
+    }
+
+    const sub = await getUserSubscription(session.user.id);
+    if (!sub.isPro) {
+      return NextResponse.json(
+        {
+          error:
+            'A exportação vetorial em PDF em alta escala é um recurso exclusivo do Plano Pro. Faça o upgrade para exportar.',
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { grid, summary, title, options } = body as {
       grid: GridMatrix;
