@@ -14,7 +14,7 @@ const client = postgres(connectionString, {
 });
 
 export const db = drizzle(client, { schema });
-export { schema };
+export { schema, client as rawClient };
 
 // Auto-create tables on first request at runtime
 let initialized = false;
