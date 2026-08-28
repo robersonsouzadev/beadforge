@@ -32,6 +32,7 @@ export function Canvas() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isPainting, setIsPainting] = useState(false);
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
 
   // Multi-touch pinch zoom state
   const touchStateRef = useRef<{
@@ -77,6 +78,49 @@ export function Canvas() {
       }
     }
   }, [grid, fitToScreen]);
+
+  // Listener Global de Teclado: Barra de Espaço (Mãozinha/Pan) e Atalhos de Ferramentas
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setIsSpacePressed(true);
+      }
+
+      // Atalhos de Ferramentas
+      if (e.key === 'b' || e.key === 'B') useEditorStore.getState().setActiveTool('brush');
+      if (e.key === 'e' || e.key === 'E') useEditorStore.getState().setActiveTool('eraser');
+      if (e.key === 'g' || e.key === 'G') useEditorStore.getState().setActiveTool('bucket');
+      if (e.key === 'i' || e.key === 'I') useEditorStore.getState().setActiveTool('dropper');
+      if (e.key === 'f' || e.key === 'F') useEditorStore.getState().toggleZenMode();
+      if (e.key === 'z' || e.key === 'Z') fitToScreen();
+
+      // Desfazer / Refazer
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        useEditorStore.getState().undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        useEditorStore.getState().redo();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [fitToScreen]);
 
   // Renderização da Grade no Canvas com Estilo Graphite
   const render = useCallback(() => {
@@ -356,7 +400,9 @@ export function Canvas() {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button === 1 || e.altKey) {
+    // Mãozinha (Pan / Mover prancha): Barra de Espaço segurada, Botão do Meio do mouse (Scroll click), ou Tecla Alt
+    if (isSpacePressed || e.button === 1 || e.altKey) {
+      e.preventDefault();
       setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
       return;
@@ -406,10 +452,37 @@ export function Canvas() {
     setIsPainting(false);
   };
 
+  // Zoom In e Out com o Scroll do Mouse convergindo na ponta do cursor (Estilo Photoshop/Figma)
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
-    setZoom(zoom * zoomFactor);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+    const newZoom = Math.max(0.05, Math.min(zoom * zoomFactor, 4.0));
+
+    // Posição do mouse relativa ao centro da prancha
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+
+    // Converte o pan para manter o ponto sob o mouse exatamente no mesmo lugar
+    const scaleChange = newZoom / zoom;
+    const newPanX = mouseX - (mouseX - pan.x) * scaleChange;
+    const newPanY = mouseY - (mouseY - pan.y) * scaleChange;
+
+    setZoom(Number(newZoom.toFixed(3)));
+    setPan({ x: newPanX, y: newPanY });
+  };
+
+  const getCursorStyle = () => {
+    if (isDragging) return 'cursor-grabbing';
+    if (isSpacePressed) return 'cursor-grab';
+    if (activeTool === 'brush') return 'cursor-crosshair';
+    if (activeTool === 'eraser') return 'cursor-cell';
+    if (activeTool === 'dropper') return 'cursor-copy';
+    if (activeTool === 'bucket') return 'cursor-crosshair';
+    return 'cursor-crosshair';
   };
 
   // --- Suporte a Gestos de Toque no Mobile/Tablet (Pinch-to-Zoom e Pintura) ---
@@ -494,7 +567,7 @@ export function Canvas() {
   return (
     <div
       ref={containerRef}
-      className="relative flex-1 h-full w-full overflow-hidden bg-zinc-950 select-none cursor-crosshair touch-none"
+      className={`relative flex-1 h-full w-full overflow-hidden bg-zinc-950 select-none touch-none ${getCursorStyle()}`}
       style={{ touchAction: 'none' }}
     >
       <canvas

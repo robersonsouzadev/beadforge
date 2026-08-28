@@ -8,6 +8,7 @@
  * Se não houver, imprime um aviso e sai com sucesso.
  */
 
+import { describe, it, expect } from 'vitest';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -19,17 +20,16 @@ const DATABASE_URL =
   process.env.DATABASE_URL ||
   'postgres://beadforge:beadforge_secure_pass_2026@localhost:5432/beadforge_db';
 
-async function main() {
-  let client: ReturnType<typeof postgres>;
-  try {
-    client = postgres(DATABASE_URL, { max: 2, connect_timeout: 5 });
-    // Quick connectivity test
-    await client`SELECT 1`;
-  } catch {
-    console.log('⚠️  PostgreSQL não acessível, pulando teste E2E de auth.');
-    console.log('   (Isso é normal em ambiente local sem Docker.)');
-    process.exit(0);
-  }
+describe('Auth Flow E2E', () => {
+  it('handles auth workflow when database is present', async () => {
+    let client: ReturnType<typeof postgres>;
+    try {
+      client = postgres(DATABASE_URL, { max: 2, connect_timeout: 2 });
+      await client`SELECT 1`;
+    } catch {
+      console.log('⚠️  PostgreSQL não acessível, pulando teste E2E de auth.');
+      return;
+    }
 
   const db = drizzle(client!, { schema });
 
@@ -181,10 +181,5 @@ async function main() {
 
   console.log('\n🎉 TODOS OS TESTES E2E DE AUTH PASSARAM!\n');
   await client!.end();
-  process.exit(0);
-}
-
-main().catch((err) => {
-  console.error('❌ Erro fatal no teste E2E:', err);
-  process.exit(1);
+  });
 });
