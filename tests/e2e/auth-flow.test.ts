@@ -154,7 +154,7 @@ async function main() {
       process.exit(1);
     }
     console.log(`   ✅ Login bem-sucedido! user.id = ${signInRes.user.id}`);
-    console.log(`   ✅ Sessão criada: token presente = ${!!signInRes.session?.token}`);
+    console.log(`   ✅ Token presente = ${!!signInRes.token}`);
   } catch (err: any) {
     console.error(`❌ FALHA no signIn: ${err.message || err}`);
     process.exit(1);
