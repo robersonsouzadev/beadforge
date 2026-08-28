@@ -35,15 +35,15 @@ function RegisterForm() {
         password,
       });
 
-      if (result.error) {
+      if (result?.error) {
         setErrorMessage(result.error.message || 'Falha ao criar conta.');
+        setIsLoading(false);
       } else {
         router.push(redirectUrl);
         router.refresh();
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Ocorreu um erro ao criar a conta.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -52,12 +52,22 @@ function RegisterForm() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      await signIn.social({
+      const res = await signIn.social({
         provider,
         callbackURL: redirectUrl,
       });
+      if (res?.error) {
+        setErrorMessage(
+          res.error.message ||
+            `Login com ${provider === 'google' ? 'Google' : 'GitHub'} ainda não está configurado no servidor. Por favor, cadastre-se com Email e Senha.`
+        );
+        setIsLoading(false);
+      }
     } catch (err: any) {
-      setErrorMessage(`Falha ao autenticar com ${provider}.`);
+      setErrorMessage(
+        err.message ||
+          `Login com ${provider === 'google' ? 'Google' : 'GitHub'} ainda não está configurado. Cadastre-se com Email e Senha.`
+      );
       setIsLoading(false);
     }
   };
