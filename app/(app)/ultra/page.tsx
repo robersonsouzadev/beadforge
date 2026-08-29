@@ -33,11 +33,14 @@ function Ultra3DContent() {
   const projectId = searchParams.get('project');
 
   const {
+    currentProjectId,
+    setCurrentProjectId,
     setGrid3D,
     setProjectName,
     projectName,
     grid3D,
     paletteId,
+    setPaletteId,
     setSystemMode,
     isLeftDrawerOpen,
     isRightDrawerOpen,
@@ -48,31 +51,31 @@ function Ultra3DContent() {
     closeDrawers,
   } = useEditorStore();
 
-  const [isSaving, startSave] = useTransition();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
-  const [currentId, setCurrentId] = useState<string | undefined>(projectId || undefined);
-
   useEffect(() => {
     setSystemMode('ultra');
   }, [setSystemMode]);
 
   // Load project if present
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) {
+      setCurrentProjectId(null);
+      return;
+    }
 
     getProjectById(projectId)
       .then((proj) => {
-        if (proj && proj.data) {
+        if (proj) {
+          setCurrentProjectId(proj.id);
           setProjectName(proj.name);
           const data = proj.data as any;
-          if (data.grid3D) setGrid3D(data.grid3D);
-          setCurrentId(proj.id);
+          if (data?.grid3D) setGrid3D(data.grid3D);
+          if (data?.paletteId) setPaletteId(data.paletteId);
         }
       })
       .catch((err) => {
         console.error('Failed to load 3D project:', err);
       });
-  }, [projectId, setGrid3D, setProjectName]);
+  }, [projectId, setGrid3D, setProjectName, setPaletteId, setCurrentProjectId]);
 
   // Default demo 3D model initialization
   useEffect(() => {
@@ -112,27 +115,6 @@ function Ultra3DContent() {
     });
     setGrid3D(grid);
   }, [grid3D, projectId, setGrid3D, setProjectName]);
-
-  const handleSave = () => {
-    if (!grid3D) return;
-
-    startSave(async () => {
-      try {
-        const res = await saveProjectAction({
-          id: currentId,
-          name: projectName,
-          mode: 'ultra',
-          projectData: { grid3D, paletteId },
-        });
-        if (res.id) setCurrentId(res.id);
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      } catch (err: any) {
-        alert(err.message || 'Erro ao salvar projeto 3D.');
-        setSaveStatus('error');
-      }
-    });
-  };
 
   return (
     <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-zinc-950 font-sans select-none">

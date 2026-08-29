@@ -42,12 +42,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
     >
       <div>
         {/* Thumbnail or Placeholder */}
-        <div className="aspect-video bg-zinc-950 rounded-xl mb-3 flex items-center justify-center overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition">
+        <div className="aspect-video bg-zinc-950 rounded-xl mb-3 flex items-center justify-center overflow-hidden border border-zinc-800 group-hover:border-zinc-700 transition relative">
           {project.thumbnail ? (
             <img
               src={project.thumbnail}
               alt={project.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+              className="w-full h-full object-contain p-1 group-hover:scale-105 transition duration-300"
             />
           ) : (
             <div className="text-zinc-600 group-hover:text-amber-400 transition">

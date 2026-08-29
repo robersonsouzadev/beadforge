@@ -21,11 +21,19 @@ function Editor2DContent() {
   const projectId = searchParams.get('project');
 
   const {
+    currentProjectId,
+    setCurrentProjectId,
     setGrid,
     setProjectName,
     projectName,
     grid,
     paletteId,
+    setPaletteId,
+    setImage,
+    setPegboardTemplate,
+    setBoardsMultipliers,
+    setDitherMode,
+    setAdjustments,
     setSystemMode,
     isLeftDrawerOpen,
     isRightDrawerOpen,
@@ -36,31 +44,59 @@ function Editor2DContent() {
     closeDrawers,
   } = useEditorStore();
 
-  const [isSaving, startSave] = useTransition();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
-  const [currentId, setCurrentId] = useState<string | undefined>(projectId || undefined);
-
   useEffect(() => {
     setSystemMode('2d');
   }, [setSystemMode]);
 
   // Load project if ID present in searchParams
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) {
+      setCurrentProjectId(null);
+      return;
+    }
 
     getProjectById(projectId)
       .then((proj) => {
-        if (proj && proj.data) {
+        if (proj) {
+          setCurrentProjectId(proj.id);
           setProjectName(proj.name);
           const data = proj.data as any;
-          if (data.grid) setGrid(data.grid);
-          setCurrentId(proj.id);
+          if (data?.grid) setGrid(data.grid);
+          if (data?.paletteId) setPaletteId(data.paletteId);
+          if (data?.originalImage) {
+            setImage(null as any, data.originalImage, data.originalImage);
+          } else if (proj.thumbnail) {
+            setImage(null as any, proj.thumbnail, proj.thumbnail);
+          }
+          if (data?.selectedPegboardTemplateId) {
+            setPegboardTemplate(data.selectedPegboardTemplateId);
+          }
+          if (data?.boardsHorizontal && data?.boardsVertical) {
+            setBoardsMultipliers(data.boardsHorizontal, data.boardsVertical);
+          }
+          if (data?.ditherMode) {
+            setDitherMode(data.ditherMode);
+          }
+          if (data?.contrast !== undefined || data?.saturation !== undefined || data?.brightness !== undefined) {
+            setAdjustments(data.contrast || 0, data.saturation || 0, data.brightness || 0);
+          }
         }
       })
       .catch((err) => {
         console.error('Failed to load project:', err);
       });
-  }, [projectId, setGrid, setProjectName]);
+  }, [
+    projectId,
+    setGrid,
+    setProjectName,
+    setPaletteId,
+    setImage,
+    setCurrentProjectId,
+    setPegboardTemplate,
+    setBoardsMultipliers,
+    setDitherMode,
+    setAdjustments,
+  ]);
 
   // Default demo grid initialization
   useEffect(() => {
@@ -99,26 +135,6 @@ function Editor2DContent() {
     const initialGrid = buildGridMatrix(beadGrid, mockW, mockH, { pegboardSize: 50 });
     setGrid(initialGrid);
   }, [grid, projectId, setGrid, setProjectName]);
-
-  const handleSave = () => {
-    if (!grid) return;
-    startSave(async () => {
-      try {
-        const res = await saveProjectAction({
-          id: currentId,
-          name: projectName,
-          mode: '2d',
-          projectData: { grid, paletteId },
-        });
-        if (res.id) setCurrentId(res.id);
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      } catch (err: any) {
-        alert(err.message || 'Erro ao salvar projeto.');
-        setSaveStatus('error');
-      }
-    });
-  };
 
   return (
     <div className="flex flex-col flex-1 h-full w-full overflow-hidden bg-zinc-950 font-sans select-none">

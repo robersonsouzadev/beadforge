@@ -28,6 +28,8 @@ interface EditorState {
   imageBase64: string | null;
 
   // Projeto & Grid 2D
+  currentProjectId: string | null;
+  setCurrentProjectId: (id: string | null) => void;
   projectName: string;
   grid: GridMatrix | null;
   summary: BeadSummary[];
@@ -195,6 +197,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     };
   }),
 
+  currentProjectId: null,
+  setCurrentProjectId: (id) => set({ currentProjectId: id }),
   projectName: 'Novo Projeto Hama Beads',
   grid: null,
   summary: [],

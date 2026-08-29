@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/auth-client';
 import { useEditorStore } from '@/store/editor-store';
 import { saveProjectAction } from '@/app/actions/projects';
+import { createProjectThumbnail } from '@/lib/thumbnail';
 import {
   Sparkles,
   LayoutGrid,
@@ -46,15 +47,26 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
 
   const {
+    currentProjectId,
+    setCurrentProjectId,
     projectName,
     setProjectName,
     grid,
     summary,
     paletteId,
     multiBoardConfig,
+    selectedPegboardTemplateId,
+    boardsHorizontal,
+    boardsVertical,
+    ditherMode,
+    contrast,
+    saturation,
+    brightness,
     systemMode,
     grid3D,
     activeLayerZ,
+    imageBase64,
+    imagePreviewUrl,
   } = useEditorStore();
 
   const isEditorRoute = pathname === '/editor' || pathname === '/ultra';
@@ -72,12 +84,53 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
     startSave(async () => {
       try {
         const mode = systemMode === 'ultra' ? 'ultra' : '2d';
-        const projectData = systemMode === 'ultra' ? { grid3D, paletteId } : { grid, paletteId };
-        await saveProjectAction({
+
+        // 1. Generate thumbnail (prefers original uploaded image, falls back to bead grid)
+        const thumbnail = await createProjectThumbnail({
+          originalImage: imageBase64 || imagePreviewUrl,
+          grid,
+          grid3D,
+          activeLayerZ,
+        });
+
+        // 2. Build full project data payload
+        const projectData =
+          systemMode === 'ultra'
+            ? {
+                grid3D,
+                paletteId,
+                originalImage: imageBase64 || imagePreviewUrl,
+              }
+            : {
+                grid,
+                paletteId,
+                originalImage: imageBase64 || imagePreviewUrl,
+                selectedPegboardTemplateId,
+                boardsHorizontal,
+                boardsVertical,
+                ditherMode,
+                contrast,
+                saturation,
+                brightness,
+              };
+
+        const res = await saveProjectAction({
+          id: currentProjectId || undefined,
           name: projectName,
           mode,
           projectData,
+          thumbnail,
         });
+
+        if (res.id) {
+          setCurrentProjectId(res.id);
+          // Sync URL if this was a new project without id in URL
+          if (!currentProjectId && typeof window !== 'undefined') {
+            const nextUrl = `/${mode === 'ultra' ? 'ultra' : 'editor'}?project=${res.id}`;
+            window.history.replaceState(null, '', nextUrl);
+          }
+        }
+
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 3000);
       } catch (err: any) {
