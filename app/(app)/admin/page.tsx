@@ -10,6 +10,7 @@ import {
   Search,
   Calendar,
   CheckCircle2,
+  Crown,
 } from 'lucide-react';
 import { AdminUsersTable } from '@/components/AdminUsersTable';
 
@@ -39,78 +40,94 @@ export default async function AdminPage() {
       </div>
 
       {/* ── Metric Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Total Users */}
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">
               Total de Contas
             </span>
-            <div className="text-3xl font-black text-white mt-1">
+            <div className="text-2xl sm:text-3xl font-black text-white mt-1">
               {data.totalUsers}
             </div>
-            <span className="text-[11px] text-zinc-500 mt-1 block">
+            <span className="text-[10px] text-zinc-500 mt-0.5 block">
               Cadastros registrados
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-            <Users className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
-        {/* Pro Users */}
-        <div className="bg-zinc-900/70 border border-amber-500/30 rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-amber-500/5">
+        {/* Studio Users */}
+        <div className="bg-zinc-900/70 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-amber-500/5">
           <div>
-            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider block">
-              Assinantes Pro
+            <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">
+              Studio Ateliê 👑
             </span>
-            <div className="text-3xl font-black text-amber-400 mt-1">
-              {data.proUsers}
+            <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-1">
+              {data.studioUsers}
             </div>
-            <span className="text-[11px] text-zinc-400 mt-1 block">
-              {data.totalUsers > 0
-                ? `${((data.proUsers / data.totalUsers) * 100).toFixed(1)}% de conversão`
-                : '0% de conversão'}
+            <span className="text-[10px] text-zinc-400 mt-0.5 block">
+              R$ 79,00 / mês
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <Zap className="w-6 h-6 fill-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <Crown className="w-5 h-5 fill-amber-400" />
+          </div>
+        </div>
+
+        {/* Creator Pro */}
+        <div className="bg-zinc-900/70 border border-sky-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-sky-500/5">
+          <div>
+            <span className="text-[11px] font-semibold text-sky-400 uppercase tracking-wider block">
+              Creator Pro ⚡
+            </span>
+            <div className="text-2xl sm:text-3xl font-black text-sky-400 mt-1">
+              {data.proUsers}
+            </div>
+            <span className="text-[10px] text-zinc-400 mt-0.5 block">
+              R$ 19,90 / mês
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+            <Zap className="w-5 h-5 fill-sky-400" />
           </div>
         </div>
 
         {/* Free Users */}
-        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between">
+        <div className="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">
-              Contas Gratuitas
+            <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">
+              Gratuitos
             </span>
-            <div className="text-3xl font-black text-white mt-1">
+            <div className="text-2xl sm:text-3xl font-black text-white mt-1">
               {data.freeUsers}
             </div>
-            <span className="text-[11px] text-zinc-500 mt-1 block">
+            <span className="text-[10px] text-zinc-500 mt-0.5 block">
               Potenciais assinantes
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
-            <Gift className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
+            <Gift className="w-5 h-5" />
           </div>
         </div>
 
         {/* MRR Estimado */}
-        <div className="bg-zinc-900/70 border border-emerald-500/30 rounded-2xl p-5 flex items-center justify-between shadow-lg shadow-emerald-500/5">
+        <div className="bg-zinc-900/70 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-emerald-500/5">
           <div>
-            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block">
               MRR Estimado
             </span>
-            <div className="text-3xl font-black text-emerald-400 mt-1">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">
               R$ {data.estimatedMRR.toFixed(2).replace('.', ',')}
             </div>
-            <span className="text-[11px] text-zinc-400 mt-1 block">
-              Receita mensal recorrente
+            <span className="text-[10px] text-zinc-400 mt-0.5 block">
+              Receita mensal
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <DollarSign className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <DollarSign className="w-5 h-5" />
           </div>
         </div>
       </div>

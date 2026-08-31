@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Clock,
   Shield,
+  Crown,
 } from 'lucide-react';
 import {
   AdminUserItem,
@@ -28,7 +29,7 @@ import { useRouter } from 'next/navigation';
 export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'pro' | 'free' | 'inactive'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'studio' | 'pro' | 'free' | 'inactive'>('all');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,7 +52,7 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
   const handleToggleStatus = (u: AdminUserItem) => {
     const isCurrentlyActive = u.subscriptionStatus === 'active' || u.isPro;
     const targetStatus = isCurrentlyActive ? 'inactive' : 'active';
-    const actionText = isCurrentlyActive ? 'inativar a assinatura' : 'ativar o plano Pro';
+    const actionText = isCurrentlyActive ? 'inativar a assinatura' : 'ativar a assinatura';
 
     if (confirm(`Deseja realmente ${actionText} do usuário ${u.name} (${u.email})?`)) {
       setPendingUserId(u.id);
@@ -91,8 +92,9 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
 
     if (!matchesSearch) return false;
 
-    if (filterType === 'pro') return u.isPro;
-    if (filterType === 'free') return !u.isPro && u.subscriptionStatus !== 'inactive';
+    if (filterType === 'studio') return u.planId === 'studio';
+    if (filterType === 'pro') return u.planId === 'pro';
+    if (filterType === 'free') return u.planId === 'free' && u.subscriptionStatus !== 'inactive';
     if (filterType === 'inactive') return u.subscriptionStatus === 'inactive';
     return true;
   });
@@ -107,7 +109,7 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
               <span>Usuários Cadastrados ({filtered.length})</span>
             </h2>
             <p className="text-xs text-zinc-400">
-              Gerencie permissões, atribua planos Pro ou Gratuitos e inative contas.
+              Gerencie permissões, atribua planos Studio, Creator ou Gratuitos e inative contas.
             </p>
           </div>
 
@@ -120,12 +122,12 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por nome ou email..."
-                className="pl-9 pr-3.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 w-52 sm:w-60"
+                className="pl-9 pr-3.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 w-48 sm:w-56"
               />
             </div>
 
             {/* Filter Pills */}
-            <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs font-semibold">
+            <div className="flex flex-wrap items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs font-semibold">
               <button
                 onClick={() => setFilterType('all')}
                 className={`px-2.5 py-1 rounded-lg transition ${
@@ -136,17 +138,31 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
               >
                 Todos ({users.length})
               </button>
+
+              <button
+                onClick={() => setFilterType('studio')}
+                className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
+                  filterType === 'studio'
+                    ? 'bg-amber-400 text-zinc-950 font-bold shadow'
+                    : 'text-amber-400 hover:text-amber-300'
+                }`}
+              >
+                <Crown className="w-3 h-3 fill-current" />
+                Studio ({users.filter((u) => u.planId === 'studio').length})
+              </button>
+
               <button
                 onClick={() => setFilterType('pro')}
                 className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
                   filterType === 'pro'
-                    ? 'bg-amber-500 text-zinc-950 font-bold shadow'
-                    : 'text-amber-400 hover:text-amber-300'
+                    ? 'bg-sky-400 text-zinc-950 font-bold shadow'
+                    : 'text-sky-400 hover:text-sky-300'
                 }`}
               >
                 <Zap className="w-3 h-3 fill-current" />
-                Pro ({users.filter((u) => u.isPro).length})
+                Creator ({users.filter((u) => u.planId === 'pro').length})
               </button>
+
               <button
                 onClick={() => setFilterType('free')}
                 className={`px-2.5 py-1 rounded-lg transition ${
@@ -155,8 +171,9 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
                     : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                Free ({users.filter((u) => !u.isPro && u.subscriptionStatus !== 'inactive').length})
+                Free ({users.filter((u) => u.planId === 'free' && u.subscriptionStatus !== 'inactive').length})
               </button>
+
               <button
                 onClick={() => setFilterType('inactive')}
                 className={`px-2.5 py-1 rounded-lg transition ${
@@ -233,10 +250,15 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/30 text-rose-400 font-bold text-[10px] uppercase tracking-wider">
                             INATIVO
                           </span>
-                        ) : u.isPro ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold text-[10px] uppercase tracking-wider">
-                            <Zap className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            PRO
+                        ) : u.planId === 'studio' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-amber-300 font-black text-[10px] uppercase tracking-wider">
+                            <Crown className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            STUDIO
+                          </span>
+                        ) : u.planId === 'pro' || u.isPro ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-300 font-bold text-[10px] uppercase tracking-wider">
+                            <Zap className="w-3 h-3 fill-sky-400 text-sky-400" />
+                            CREATOR
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-[10px] font-semibold">

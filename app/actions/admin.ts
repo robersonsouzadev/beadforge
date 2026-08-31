@@ -16,6 +16,7 @@ export interface AdminUserItem {
   role: string;
   createdAt: Date;
   isPro: boolean;
+  planId: 'studio' | 'pro' | 'free';
   subscriptionStatus: string;
   currentPeriodEnd: Date | null;
   projectCount: number;
@@ -25,6 +26,7 @@ export interface AdminStats {
   totalUsers: number;
   freeUsers: number;
   proUsers: number;
+  studioUsers: number;
   totalProjects: number;
   estimatedMRR: number;
   users: AdminUserItem[];
@@ -81,6 +83,7 @@ export async function getAdminData(): Promise<AdminStats> {
     projectCountMap.set(p.userId, (projectCountMap.get(p.userId) || 0) + 1);
   }
 
+  let studioCount = 0;
   let proCount = 0;
   let freeCount = 0;
 
@@ -90,9 +93,17 @@ export async function getAdminData(): Promise<AdminStats> {
     const periodEnd = userSub?.currentPeriodEnd ? new Date(userSub.currentPeriodEnd).getTime() : 0;
     const isPeriodValid = periodEnd === 0 || periodEnd + 86_400_000 > now;
 
-    const isPro = (userSub?.status === 'active' || userSub?.status === 'trialing') && isPeriodValid;
+    const isActive = (userSub?.status === 'active' || userSub?.status === 'trialing') && isPeriodValid;
+    const priceId = (userSub?.stripePriceId || '').toLowerCase();
+    const isStudio = isActive && (priceId.includes('studio') || priceId === 'studio');
+    const isCreatorPro = isActive && !isStudio;
 
-    if (isPro) {
+    let planId: 'studio' | 'pro' | 'free' = 'free';
+    if (isStudio) {
+      planId = 'studio';
+      studioCount++;
+    } else if (isCreatorPro) {
+      planId = 'pro';
       proCount++;
     } else {
       freeCount++;
@@ -104,20 +115,22 @@ export async function getAdminData(): Promise<AdminStats> {
       email: u.email,
       role: u.role || 'user',
       createdAt: u.createdAt,
-      isPro,
+      isPro: isActive,
+      planId,
       subscriptionStatus: userSub?.status || 'none',
       currentPeriodEnd: userSub?.currentPeriodEnd || null,
       projectCount: projectCountMap.get(u.id) || 0,
     };
   });
 
-  // Calculate estimated Monthly Recurring Revenue (R$ 29,90 por assinante Pro)
-  const estimatedMRR = proCount * 29.9;
+  // Calculate estimated Monthly Recurring Revenue (Studio R$ 79,00 + Pro R$ 19,90)
+  const estimatedMRR = studioCount * 79.0 + proCount * 19.9;
 
   return {
     totalUsers: allUsers.length,
     freeUsers: freeCount,
     proUsers: proCount,
+    studioUsers: studioCount,
     totalProjects: allProjects.length,
     estimatedMRR,
     users: usersList,
@@ -128,7 +141,7 @@ export interface CreateAdminUserPayload {
   name: string;
   email: string;
   password?: string;
-  plan: 'pro' | 'free';
+  plan: 'studio' | 'pro' | 'free';
   status: 'active' | 'inactive';
   duration?: '30days' | '6months' | '1year' | 'lifetime' | 'custom';
   customPeriodEnd?: string;
@@ -196,7 +209,7 @@ export interface UpdateAdminUserPayload {
   userId: string;
   name: string;
   email: string;
-  plan: 'pro' | 'free';
+  plan: 'studio' | 'pro' | 'free';
   status: 'active' | 'inactive';
   duration?: '30days' | '6months' | '1year' | 'lifetime' | 'custom';
   customPeriodEnd?: string;
@@ -303,7 +316,7 @@ export async function deleteAdminUserAction(userId: string) {
 // Helper to calculate and apply subscription
 async function applySubscriptionPlan(
   userId: string,
-  plan: 'pro' | 'free',
+  plan: 'studio' | 'pro' | 'free',
   status: 'active' | 'inactive',
   duration?: '30days' | '6months' | '1year' | 'lifetime' | 'custom',
   customPeriodEnd?: string
@@ -321,6 +334,7 @@ async function applySubscriptionPlan(
         .update(subscription)
         .set({
           status: newStatus,
+          stripePriceId: plan === 'free' ? null : existingSub.stripePriceId,
           updatedAt: new Date(),
         })
         .where(eq(subscription.userId, userId));
@@ -336,7 +350,7 @@ async function applySubscriptionPlan(
     return;
   }
 
-  // Calculate Period End for PRO
+  // Calculate Period End for PRO / STUDIO
   let periodEnd: Date;
   if (duration === 'custom' && customPeriodEnd) {
     periodEnd = new Date(customPeriodEnd);
@@ -356,6 +370,7 @@ async function applySubscriptionPlan(
       .update(subscription)
       .set({
         status: 'active',
+        stripePriceId: plan,
         currentPeriodStart: new Date(),
         currentPeriodEnd: periodEnd,
         updatedAt: new Date(),
@@ -366,6 +381,7 @@ async function applySubscriptionPlan(
       id: crypto.randomUUID(),
       userId,
       status: 'active',
+      stripePriceId: plan,
       currentPeriodStart: new Date(),
       currentPeriodEnd: periodEnd,
       createdAt: new Date(),

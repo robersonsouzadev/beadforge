@@ -5,7 +5,9 @@ import { SUBSCRIPTION_PLANS, Plan } from '@/config/subscriptions';
 
 export interface UserSubscriptionDetails {
   plan: Plan;
+  planId: 'free' | 'pro' | 'studio';
   isPro: boolean;
+  isStudio: boolean;
   status: string;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
@@ -22,7 +24,9 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   if (!sub) {
     return {
       plan: SUBSCRIPTION_PLANS.free,
+      planId: 'free',
       isPro: false,
+      isStudio: false,
       status: 'none',
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
@@ -36,10 +40,15 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   const isPeriodValid = periodEnd > 0 ? periodEnd + 86_400_000 > now : false;
 
   const isPro = (sub.status === 'active' || sub.status === 'trialing') && (periodEnd === 0 || isPeriodValid);
+  const priceId = (sub.stripePriceId || '').toLowerCase();
+  const isStudio = isPro && (priceId.includes('studio') || priceId === 'studio');
+  const planId: 'free' | 'pro' | 'studio' = isPro ? (isStudio ? 'studio' : 'pro') : 'free';
 
   return {
-    plan: isPro ? SUBSCRIPTION_PLANS.pro : SUBSCRIPTION_PLANS.free,
+    plan: SUBSCRIPTION_PLANS[planId] || SUBSCRIPTION_PLANS.pro,
+    planId,
     isPro,
+    isStudio,
     status: sub.status,
     currentPeriodEnd: sub.currentPeriodEnd,
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd ?? false,

@@ -16,6 +16,7 @@ import {
   Shield,
   ToggleLeft,
   ToggleRight,
+  Crown,
 } from 'lucide-react';
 import {
   AdminUserItem,
@@ -43,7 +44,7 @@ export function AdminUserModal({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [plan, setPlan] = useState<'pro' | 'free'>('pro');
+  const [plan, setPlan] = useState<'studio' | 'pro' | 'free'>('studio');
   const [status, setStatus] = useState<'active' | 'inactive'>('active');
   const [duration, setDuration] = useState<
     '30days' | '6months' | '1year' | 'lifetime' | 'custom'
@@ -56,7 +57,7 @@ export function AdminUserModal({
       setName(userToEdit.name || '');
       setEmail(userToEdit.email || '');
       setPassword('');
-      setPlan(userToEdit.isPro ? 'pro' : 'free');
+      setPlan(userToEdit.planId || (userToEdit.isPro ? 'studio' : 'free'));
       setStatus(userToEdit.subscriptionStatus === 'inactive' ? 'inactive' : 'active');
       if (userToEdit.currentPeriodEnd) {
         const d = new Date(userToEdit.currentPeriodEnd);
@@ -65,7 +66,6 @@ export function AdminUserModal({
           setDuration('lifetime');
         } else {
           setDuration('custom');
-          setCustomPeriodEnd(d.toISOString().split('T')[0]);
         }
       } else {
         setDuration('30days');
@@ -75,7 +75,7 @@ export function AdminUserModal({
       setName('');
       setEmail('');
       setPassword('123456');
-      setPlan('pro');
+      setPlan('studio');
       setStatus('active');
       setDuration('30days');
       setCustomPeriodEnd('');
@@ -103,8 +103,8 @@ export function AdminUserModal({
             email,
             plan,
             status,
-            duration: plan === 'pro' ? duration : undefined,
-            customPeriodEnd: plan === 'pro' && duration === 'custom' ? customPeriodEnd : undefined,
+            duration: plan !== 'free' ? duration : undefined,
+            customPeriodEnd: plan !== 'free' && duration === 'custom' ? customPeriodEnd : undefined,
           });
         } else {
           await createAdminUserAction({
@@ -113,8 +113,8 @@ export function AdminUserModal({
             password: password || '123456',
             plan,
             status,
-            duration: plan === 'pro' ? duration : undefined,
-            customPeriodEnd: plan === 'pro' && duration === 'custom' ? customPeriodEnd : undefined,
+            duration: plan !== 'free' ? duration : undefined,
+            customPeriodEnd: plan !== 'free' && duration === 'custom' ? customPeriodEnd : undefined,
           });
         }
 
@@ -221,54 +221,85 @@ export function AdminUserModal({
             />
           </div>
 
-          {/* Seletor de Plano */}
+          {/* Seletor de Plano: 3 Módulos */}
           <div className="space-y-1.5 pt-2 border-t border-zinc-800">
             <label className="block text-xs font-semibold text-zinc-300">
               Plano de Acesso
             </label>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* Studio Ateliê */}
               <button
                 type="button"
-                onClick={() => setPlan('pro')}
-                className={`p-3 rounded-xl border flex items-center gap-3 transition text-left ${
-                  plan === 'pro'
-                    ? 'bg-amber-500/15 border-amber-400/80 shadow-md ring-1 ring-amber-400/50'
+                onClick={() => setPlan('studio')}
+                className={`p-3 rounded-xl border flex flex-col justify-between gap-2 transition text-left relative overflow-hidden ${
+                  plan === 'studio'
+                    ? 'bg-amber-500/15 border-amber-400 shadow-md ring-1 ring-amber-400/50'
                     : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-400'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  plan === 'pro' ? 'bg-amber-400 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                }`}>
-                  <Zap className="w-4 h-4 fill-current" />
-                </div>
-                <div>
-                  <span className={`text-xs font-bold block ${plan === 'pro' ? 'text-amber-300' : 'text-zinc-300'}`}>
-                    BeadForge PRO
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    plan === 'studio' ? 'bg-amber-400 text-zinc-950' : 'bg-zinc-850 text-amber-400'
+                  }`}>
+                    <Crown className="w-4 h-4 fill-current" />
+                  </div>
+                  <span className={`text-xs font-black ${plan === 'studio' ? 'text-amber-300' : 'text-zinc-200'}`}>
+                    Studio Ateliê
                   </span>
-                  <span className="text-[10px] text-zinc-500">Ultra 3D + Projetos Ilimitados</span>
                 </div>
+                <span className="text-[10px] text-zinc-400 leading-tight">
+                  Estoque + Pedidos + CRM + Provas + 3D + White-Label
+                </span>
               </button>
 
+              {/* Creator Pro */}
+              <button
+                type="button"
+                onClick={() => setPlan('pro')}
+                className={`p-3 rounded-xl border flex flex-col justify-between gap-2 transition text-left ${
+                  plan === 'pro'
+                    ? 'bg-sky-500/15 border-sky-400 shadow-md ring-1 ring-sky-400/50'
+                    : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-400'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    plan === 'pro' ? 'bg-sky-400 text-zinc-950' : 'bg-zinc-850 text-sky-400'
+                  }`}>
+                    <Zap className="w-4 h-4 fill-current" />
+                  </div>
+                  <span className={`text-xs font-bold ${plan === 'pro' ? 'text-sky-300' : 'text-zinc-300'}`}>
+                    Creator Pro
+                  </span>
+                </div>
+                <span className="text-[10px] text-zinc-400 leading-tight">
+                  PDF 1:1 Limpo + Projetos Ilimitados + Crafting
+                </span>
+              </button>
+
+              {/* Plano Gratuito */}
               <button
                 type="button"
                 onClick={() => setPlan('free')}
-                className={`p-3 rounded-xl border flex items-center gap-3 transition text-left ${
+                className={`p-3 rounded-xl border flex flex-col justify-between gap-2 transition text-left ${
                   plan === 'free'
                     ? 'bg-zinc-800 border-zinc-600 shadow-md ring-1 ring-zinc-500'
                     : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-400'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  plan === 'free' ? 'bg-zinc-700 text-white' : 'bg-zinc-850 text-zinc-500'
-                }`}>
-                  <Gift className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className={`text-xs font-bold block ${plan === 'free' ? 'text-white' : 'text-zinc-300'}`}>
-                    Plano Gratuito
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    plan === 'free' ? 'bg-zinc-700 text-white' : 'bg-zinc-850 text-zinc-500'
+                  }`}>
+                    <Gift className="w-4 h-4" />
+                  </div>
+                  <span className={`text-xs font-bold ${plan === 'free' ? 'text-white' : 'text-zinc-300'}`}>
+                    Gratuito
                   </span>
-                  <span className="text-[10px] text-zinc-500">Até 3 projetos 2D</span>
                 </div>
+                <span className="text-[10px] text-zinc-400 leading-tight">
+                  Até 3 projetos 2D + PDF com marca d&apos;água
+                </span>
               </button>
             </div>
           </div>
@@ -300,13 +331,13 @@ export function AdminUserModal({
             </button>
           </div>
 
-          {/* Duração / Validade do Plano Pro (apenas se Pro estiver selecionado e status for ativo) */}
-          {plan === 'pro' && status === 'active' && (
+          {/* Duração / Validade do Plano Pago (apenas se Studio ou Pro estiver selecionado e status for ativo) */}
+          {plan !== 'free' && status === 'active' && (
             <div className="space-y-2 pt-2 border-t border-zinc-800">
               <label className="block text-xs font-semibold text-zinc-300 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Duração / Validade do Pro</span>
+                  <span>Duração / Validade do {plan === 'studio' ? 'Studio' : 'Pro'}</span>
                 </span>
                 <span className="text-[10px] text-amber-400 font-mono">
                   {duration === 'lifetime' ? 'Sem Expiração' : 'Renovação'}
