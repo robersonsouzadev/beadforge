@@ -22,6 +22,9 @@ export default function MarketingLayout({
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
+            <Link href="/gallery" className="hover:text-white transition text-amber-400 font-semibold flex items-center gap-1">
+              <span>Galeria de Moldes</span>
+            </Link>
             <Link href="/#features" className="hover:text-white transition">
               Recursos
             </Link>

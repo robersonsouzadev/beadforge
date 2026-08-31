@@ -47,10 +47,17 @@ export default function LandingPage() {
             </Link>
 
             <Link
-              href="/pricing"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white text-base font-semibold rounded-2xl transition duration-200"
+              href="/gallery"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 text-base font-semibold rounded-2xl transition duration-200"
             >
-              <span>Ver Planos & Preços</span>
+              <span>Explorar Galeria de Moldes</span>
+            </Link>
+
+            <Link
+              href="/pricing"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white text-base font-semibold rounded-2xl transition duration-200"
+            >
+              <span>Preços</span>
             </Link>
           </div>
 

@@ -14,6 +14,10 @@ import {
   Clock,
   Trash2,
   FolderOpen,
+  Boxes,
+  ClipboardList,
+  Users,
+  Globe,
 } from 'lucide-react';
 import { ProjectCard } from '@/components/ProjectCard';
 
@@ -116,7 +120,60 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* ── My Projects Section ── */}
+      {/* ── Business Studio Modules Quick Access ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <Link
+          href="/inventory"
+          className="bg-zinc-900/60 border border-zinc-800 hover:border-amber-500/40 p-3.5 rounded-2xl flex flex-col justify-between space-y-2 hover:bg-zinc-850 transition group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-105 transition">
+            <Boxes className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-white block group-hover:text-amber-400 transition">Estoque de Beads</span>
+            <span className="text-[10px] text-zinc-400">Controle gavetas & cores</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/orders"
+          className="bg-zinc-900/60 border border-zinc-800 hover:border-amber-500/40 p-3.5 rounded-2xl flex flex-col justify-between space-y-2 hover:bg-zinc-850 transition group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition">
+            <ClipboardList className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-white block group-hover:text-emerald-400 transition">Pedidos & Provas</span>
+            <span className="text-[10px] text-zinc-400">Status & links WhatsApp</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/clients"
+          className="bg-zinc-900/60 border border-zinc-800 hover:border-amber-500/40 p-3.5 rounded-2xl flex flex-col justify-between space-y-2 hover:bg-zinc-850 transition group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center group-hover:scale-105 transition">
+            <Users className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-white block group-hover:text-sky-400 transition">Clientes</span>
+            <span className="text-[10px] text-zinc-400">Contatos & histórico</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/gallery"
+          className="bg-zinc-900/60 border border-zinc-800 hover:border-amber-500/40 p-3.5 rounded-2xl flex flex-col justify-between space-y-2 hover:bg-zinc-850 transition group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center group-hover:scale-105 transition">
+            <Globe className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-white block group-hover:text-pink-400 transition">Galeria Pública</span>
+            <span className="text-[10px] text-zinc-400">Moldes & comunidade</span>
+          </div>
+        </Link>
+      </div>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-zinc-800 pb-4">
           <div>
