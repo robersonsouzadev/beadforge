@@ -121,3 +121,152 @@ export async function createCustomerPortalSession() {
 
   redirect(portalSession.url);
 }
+
+export const CREDIT_PACKAGES = {
+  starter: {
+    id: 'starter',
+    name: 'Pacote Starter (10 Créditos)',
+    credits: 10,
+    priceBrl: 19.9,
+    priceInCents: 1990,
+    unitPriceBrl: '1,99',
+    description: '10 Esculturas 3D por IA no BeadForge Ultra',
+    badge: 'Iniciante',
+  },
+  popular: {
+    id: 'popular',
+    name: 'Pacote Popular (25 Créditos)',
+    credits: 25,
+    priceBrl: 39.9,
+    priceInCents: 3990,
+    unitPriceBrl: '1,59',
+    description: '25 Esculturas 3D por IA • Mais Vendido',
+    badge: 'Mais Vendido',
+  },
+  mega: {
+    id: 'mega',
+    name: 'Pacote Mega Studio (60 Créditos)',
+    credits: 60,
+    priceBrl: 79.9,
+    priceInCents: 7990,
+    unitPriceBrl: '1,33',
+    description: '60 Esculturas 3D por IA • Melhor Custo-Benefício',
+    badge: 'Melhor Valor',
+  },
+} as const;
+
+export type CreditPackId = keyof typeof CREDIT_PACKAGES;
+
+/**
+ * Cria sessão de checkout avulso (One-Time Payment) para compra de créditos de IA 3D via Cartão ou PIX
+ */
+export async function createCreditsCheckoutSession(packId: CreditPackId) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect(`/login?redirect=/pricing`);
+  }
+
+  const currentUser = session.user;
+  const pack = CREDIT_PACKAGES[packId];
+  if (!pack) {
+    throw new Error('Pacote de créditos inválido.');
+  }
+
+  // 1. Obter ou criar cliente no Stripe
+  const [existingSub] = await db
+    .select()
+    .from(subscription)
+    .where(eq(subscription.userId, currentUser.id))
+    .limit(1);
+
+  let customerId = existingSub?.stripeCustomerId;
+
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: currentUser.email,
+      name: currentUser.name,
+      metadata: {
+        userId: currentUser.id,
+      },
+    });
+    customerId = customer.id;
+
+    if (existingSub) {
+      await db
+        .update(subscription)
+        .set({ stripeCustomerId: customerId, updatedAt: new Date() })
+        .where(eq(subscription.userId, currentUser.id));
+    } else {
+      await db.insert(subscription).values({
+        id: crypto.randomUUID(),
+        userId: currentUser.id,
+        stripeCustomerId: customerId,
+        status: 'inactive',
+      });
+    }
+  }
+
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.BETTER_AUTH_URL ||
+    'http://localhost:3000';
+
+  // 2. Criar Checkout Session para Pagamento Avulso (Modo Payment com Cartão e PIX)
+  const checkoutSession = await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: 'payment',
+    payment_method_types: ['card', 'pix'],
+    line_items: [
+      {
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: pack.name,
+            description: pack.description,
+          },
+          unit_amount: pack.priceInCents,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      type: 'credits_purchase',
+      packId: pack.id,
+      creditsCount: String(pack.credits),
+      userId: currentUser.id,
+    },
+    success_url: `${origin}/ultra?credits_purchase=success&pack=${pack.id}`,
+    cancel_url: `${origin}/ultra?credits_purchase=cancelled`,
+    locale: 'pt-BR',
+    allow_promotion_codes: true,
+  });
+
+  if (!checkoutSession.url) {
+    throw new Error('Falha ao gerar link de pagamento de créditos.');
+  }
+
+  redirect(checkoutSession.url);
+}
+
+/**
+ * Retorna o saldo atual de créditos de IA do usuário logado
+ */
+export async function getUserAiCredits(): Promise<number> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user?.id) return 0;
+
+  const [u] = await db
+    .select({ aiCredits: user.aiCredits })
+    .from(user)
+    .where(eq(user.id, session.user.id))
+    .limit(1);
+
+  return u?.aiCredits ?? 5;
+}
+

@@ -3,7 +3,12 @@
 import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptions';
-import { createCheckoutSession } from '@/app/actions/billing';
+import {
+  createCheckoutSession,
+  CREDIT_PACKAGES,
+  CreditPackId,
+  createCreditsCheckoutSession,
+} from '@/app/actions/billing';
 import { useTranslation } from '@/lib/i18n';
 import {
   Check,
@@ -15,12 +20,17 @@ import {
   Loader2,
   Crown,
   ArrowRight,
+  Coins,
+  Zap,
+  Flame,
+  Star,
 } from 'lucide-react';
 
 export default function PricingPage() {
   const { t, currency, setCurrency } = useTranslation();
   const [isYearly, setIsYearly] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [pendingPackId, setPendingPackId] = useState<string | null>(null);
 
   const handleCheckout = (priceId: string) => {
     startTransition(async () => {
@@ -28,6 +38,19 @@ export default function PricingPage() {
         await createCheckoutSession(priceId);
       } catch (err: any) {
         console.error('Checkout error:', err);
+      }
+    });
+  };
+
+  const handleCreditsCheckout = (packId: CreditPackId) => {
+    setPendingPackId(packId);
+    startTransition(async () => {
+      try {
+        await createCreditsCheckoutSession(packId);
+      } catch (err: any) {
+        alert(err.message || 'Erro ao iniciar checkout de créditos.');
+      } finally {
+        setPendingPackId(null);
       }
     });
   };
@@ -283,7 +306,7 @@ export default function PricingPage() {
               disabled={isPending}
               className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black text-xs rounded-xl shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 transition transform active:scale-95 disabled:opacity-50"
             >
-              {isPending ? (
+              {isPending && !pendingPackId ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
@@ -293,6 +316,110 @@ export default function PricingPage() {
               )}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* ── Seção de Pacotes de Créditos de IA 3D Avulsos ── */}
+      <div className="bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-8 sm:p-10 rounded-3xl border border-zinc-800 shadow-2xl space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
+            <Coins className="w-4 h-4" />
+            <span>SEM MENSALIDADE • PAGAMENTO ÚNICO</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white">
+            Precisa apenas de <span className="text-amber-400">Créditos de IA 3D</span>?
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-400">
+            Recarregue pacotes avulsos com Cartão ou PIX imediato. Os créditos nunca expiram.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {(Object.keys(CREDIT_PACKAGES) as CreditPackId[]).map((key) => {
+            const pack = CREDIT_PACKAGES[key];
+            const isPopular = key === 'popular';
+            const isMega = key === 'mega';
+            const isRowPending = isPending && pendingPackId === key;
+
+            return (
+              <div
+                key={key}
+                className={`relative p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+                  isPopular
+                    ? 'bg-zinc-900/90 border-amber-400 ring-2 ring-amber-400/40 shadow-xl shadow-amber-500/10'
+                    : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                {isPopular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-zinc-950 text-[10px] font-black uppercase px-3 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                    <Flame className="w-3 h-3 fill-zinc-950" />
+                    <span>MAIS VENDIDO</span>
+                  </div>
+                )}
+
+                {isMega && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-400 text-zinc-950 text-[10px] font-black uppercase px-3 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-zinc-950" />
+                    <span>MELHOR VALOR</span>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-white">{pack.name}</h3>
+                    <span className="text-xs text-zinc-400">{pack.description}</span>
+                  </div>
+
+                  <div>
+                    <div className="text-3xl font-black text-white font-mono flex items-baseline gap-1">
+                      <span>R$</span>
+                      <span>{pack.priceBrl.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <span className="text-xs text-amber-400 font-mono font-bold block mt-0.5">
+                      R$ {pack.unitPriceBrl} por modelo 3D
+                    </span>
+                  </div>
+
+                  <div className="pt-4 border-t border-zinc-800/80 space-y-2 text-xs text-zinc-300">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{pack.credits} conversões Image-to-3D</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Fatiamento & Blueprints inclusos</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Sem expiração de saldo</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <button
+                    type="button"
+                    onClick={() => handleCreditsCheckout(key)}
+                    disabled={isPending}
+                    className={`w-full py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-50 ${
+                      isPopular
+                        ? 'bg-amber-400 hover:bg-amber-300 text-zinc-950 shadow-lg shadow-amber-400/20'
+                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700'
+                    }`}
+                  >
+                    {isRowPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <span>Comprar {pack.credits} Créditos</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

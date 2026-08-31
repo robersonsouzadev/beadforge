@@ -3,6 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { useEditorStore } from '@/store/editor-store';
 import { VoxelEngine } from '@/core/voxel/voxelizer';
+import { CreditPurchaseModal } from '@/components/CreditPurchaseModal';
+import { getUserAiCredits } from '@/app/actions/billing';
 import {
   X,
   Sparkles,
@@ -14,6 +16,8 @@ import {
   Layers,
   Wand2,
   ShieldAlert,
+  Coins,
+  Zap,
 } from 'lucide-react';
 
 export function ImageTo3DModal() {
@@ -34,6 +38,14 @@ export function ImageTo3DModal() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [stepStatus, setStepStatus] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [userCredits, setUserCredits] = useState<number | null>(null);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (isImageTo3DModalOpen) {
+      getUserAiCredits().then((c) => setUserCredits(c)).catch(() => setUserCredits(5));
+    }
+  }, [isImageTo3DModalOpen]);
 
   if (!isImageTo3DModalOpen) return null;
 
@@ -196,6 +208,29 @@ export function ImageTo3DModal() {
 
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto">
+          {/* Card de Créditos do Usuário */}
+          <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Coins className="w-4 h-4 text-amber-400" />
+              <span className="text-xs text-zinc-300 font-medium">
+                Saldo:{' '}
+                <strong className="text-amber-400 font-mono">
+                  {userCredits ?? 0} {userCredits === 1 ? 'crédito' : 'créditos'}
+                </strong>
+              </span>
+              <span className="text-[10px] text-zinc-500 hidden sm:inline">(Gasta 1 crédito por modelo)</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsCreditsModalOpen(true)}
+              className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 hover:underline"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Recarregar</span>
+            </button>
+          </div>
+
           {/* Upload Zone */}
           <div>
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
@@ -340,26 +375,47 @@ export function ImageTo3DModal() {
             Fatiamento em camadas + cálculo de hastes incluso
           </span>
 
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!selectedFile || isGenerating}
-            className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-2 transition shadow-lg disabled:opacity-40 disabled:pointer-events-none"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Processando com IA...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Gerar Escultura 3D</span>
-              </>
-            )}
-          </button>
+          {userCredits === 0 ? (
+            <button
+              type="button"
+              onClick={() => setIsCreditsModalOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs flex items-center gap-2 transition shadow-lg shadow-amber-400/20"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Recarregar Créditos (Saldo: 0)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!selectedFile || isGenerating}
+              className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-2 transition shadow-lg disabled:opacity-40 disabled:pointer-events-none"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Processando com IA...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Gerar Escultura 3D (1 crédito)</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Modal de Compra de Créditos */}
+      <CreditPurchaseModal
+        isOpen={isCreditsModalOpen}
+        onClose={() => {
+          setIsCreditsModalOpen(false);
+          getUserAiCredits().then((c) => setUserCredits(c)).catch(() => {});
+        }}
+        currentCredits={userCredits ?? 0}
+      />
     </div>
   );
 }

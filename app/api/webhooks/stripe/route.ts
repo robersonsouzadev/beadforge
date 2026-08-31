@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/db';
-import { subscription, webhookEvent } from '@/db/schema';
+import { subscription, webhookEvent, user } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(req: Request) {
@@ -51,6 +51,29 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
 
+        // 1. Compra de Pacote Avulso de Créditos de IA (One-Time Payment)
+        if (session.mode === 'payment' && session.metadata?.type === 'credits_purchase' && userId) {
+          const creditsToAdd = parseInt(session.metadata.creditsCount || '0', 10);
+          if (creditsToAdd > 0) {
+            const [targetUser] = await db
+              .select()
+              .from(user)
+              .where(eq(user.id, userId))
+              .limit(1);
+
+            if (targetUser) {
+              await db
+                .update(user)
+                .set({
+                  aiCredits: (targetUser.aiCredits ?? 0) + creditsToAdd,
+                  updatedAt: new Date(),
+                })
+                .where(eq(user.id, userId));
+            }
+          }
+        }
+
+        // 2. Assinatura Recorrente (Creator Pro / Studio Ateliê)
         if (session.mode === 'subscription' && session.subscription && userId) {
           const sub = await stripe.subscriptions.retrieve(
             session.subscription as string
@@ -98,6 +121,21 @@ export async function POST(req: Request) {
               createdAt: new Date(),
               updatedAt: new Date(),
             });
+          }
+
+          // Conceder cota mensal de créditos de IA inclusos no plano
+          const normalizedPrice = (priceId || '').toLowerCase();
+          const monthlyPlanCredits = normalizedPrice.includes('studio') ? 30 : 10;
+
+          const [u] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+          if (u) {
+            await db
+              .update(user)
+              .set({
+                aiCredits: (u.aiCredits ?? 0) + monthlyPlanCredits,
+                updatedAt: new Date(),
+              })
+              .where(eq(user.id, userId));
           }
         }
         break;

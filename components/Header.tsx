@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { PublishPatternModal } from '@/components/gallery/PublishPatternModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { CreditPurchaseModal } from '@/components/CreditPurchaseModal';
+import { getUserAiCredits } from '@/app/actions/billing';
 
 interface HeaderProps {
   onSave?: () => void;
@@ -47,6 +49,12 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+  const [userCredits, setUserCredits] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    getUserAiCredits().then((c) => setUserCredits(c)).catch(() => setUserCredits(5));
+  }, []);
 
   // 1. Exportar PDF Vetorial para Impressão (2D ou 3D Multi-Camadas)
   const handleExportPdf = async () => {
@@ -431,6 +439,19 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
           </button>
         )}
 
+        {/* Pílula de Créditos de IA 3D */}
+        <button
+          type="button"
+          onClick={() => setIsCreditsModalOpen(true)}
+          className="bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-amber-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition shadow-sm"
+          title="Clique para recarregar créditos de IA 3D"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span>{userCredits !== null ? `${userCredits}` : 'IA'}</span>
+          <span className="hidden md:inline text-[11px] font-normal text-amber-200/80">créditos</span>
+          <span className="hidden sm:inline text-[9px] bg-amber-400 text-zinc-950 px-1 py-0.2 rounded font-extrabold">+</span>
+        </button>
+
         {/* Seletor de Idioma */}
         <LanguageSwitcher />
 
@@ -504,6 +525,16 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
           colorCount={summary?.length}
         />
       )}
+
+      {/* Modal de Recarga de Créditos de IA 3D */}
+      <CreditPurchaseModal
+        isOpen={isCreditsModalOpen}
+        onClose={() => {
+          setIsCreditsModalOpen(false);
+          getUserAiCredits().then((c) => setUserCredits(c)).catch(() => {});
+        }}
+        currentCredits={userCredits ?? 0}
+      />
     </header>
   );
 }

@@ -80,6 +80,7 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
       { name: 'Paletas oficiais Hama, Artkal e Pindoo', included: true },
       { name: 'Multi-placas até 4×4', included: true },
       { name: 'Até 3 projetos salvos na nuvem', included: true },
+      { name: '🎁 3 Créditos de IA 3D de Boas-Vindas', included: true },
       { name: 'PDF 1:1 sem marca d\'água', included: false },
       { name: 'Estoque Físico & Baixa Automática', included: false },
       { name: 'Calculadora de Custos & Preço com Taxas', included: false },
@@ -134,6 +135,7 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
       { name: 'PDFs 1:1 limpos sem marca d\'água', included: true },
       { name: 'Projetos ILIMITADOS na nuvem', included: true },
       { name: 'Imagens PNG em Alta Resolução 4K', included: true },
+      { name: '⚡ 10 Créditos de IA 3D inclusos todo mês', included: true },
       { name: 'Assistente de Montagem Bead-a-Bead', included: true },
       { name: 'Galeria Pública & Perfil de Criador', included: true },
       { name: 'Estoque Físico & Baixa Automática', included: false },
@@ -186,6 +188,7 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
     },
     features: [
       { name: 'Tudo do plano Creator Pro', included: true },
+      { name: '👑 30 Créditos de IA 3D inclusos todo mês', included: true },
       { name: 'Estoque Físico Multi-Marca Ilimitado', included: true },
       { name: 'BOM Inteligente & Baixa Automática', included: true },
       { name: 'Calculadora de Custos & Taxas (Shopee/ML/Elo7)', included: true },
