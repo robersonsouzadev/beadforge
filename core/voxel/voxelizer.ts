@@ -10,6 +10,7 @@ import type {
 } from '@/core/voxel/voxel-types';
 
 import { getContrastTextColor } from '@/core/color/contrast';
+import { calculateSupportRods } from '@/core/voxel/rod-calculator';
 
 /**
  * Motor de Voxelização e Fatiamento 3D para Hama/Perler Beads
@@ -92,15 +93,18 @@ export class VoxelEngine {
     targetWidth: number,
     targetHeight: number,
     targetDepth: number,
-    options: {
-      fillMode?: FillMode;
-      wallThickness?: number;
-      pitchMm?: number;
-    } = {}
+    options:
+      | number
+      | {
+          fillMode?: FillMode;
+          wallThickness?: number;
+          pitchMm?: number;
+        } = {}
   ): VoxelGrid3D {
-    const fillMode = options.fillMode || 'solid';
-    const wallThickness = options.wallThickness || 1;
-    const pitchMm = options.pitchMm || 2.6;
+    const opts = typeof options === 'number' ? { pitchMm: options } : options;
+    const fillMode = opts.fillMode || 'solid';
+    const wallThickness = opts.wallThickness || 1;
+    const pitchMm = opts.pitchMm || 2.6;
 
     if (rawVoxels.length === 0) {
       return VoxelEngine.createEmptyGrid(targetWidth, targetHeight, targetDepth, pitchMm);
@@ -214,6 +218,12 @@ export class VoxelEngine {
       layer.grid.totalBeads = layer.beadCount;
     }
     grid3D.totalBeads = grandTotalBeads;
+
+    // Calcula automaticamente hastes acrílicas de sustentação se a peça for 3D multicamadas
+    if (grid3D.totalLayers >= 4) {
+      const { grid3D: gridWithRods } = calculateSupportRods(grid3D);
+      return gridWithRods;
+    }
 
     return grid3D;
   }

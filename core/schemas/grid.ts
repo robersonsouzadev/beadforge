@@ -13,6 +13,7 @@ export const GridCellSchema = z.object({
   }),
   textColor: z.enum(['#000000', '#FFFFFF']),
   isEmpty: z.boolean().default(false),
+  isRodHole: z.boolean().optional(),
 });
 
 export const GridMatrixSchema = z.object({

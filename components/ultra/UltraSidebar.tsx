@@ -22,6 +22,7 @@ import {
   Flame,
   Star,
   Loader2,
+  Wand2,
 } from 'lucide-react';
 
 interface UltraSidebarProps {
@@ -248,6 +249,21 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
       </div>
 
       <div className="p-3.5 space-y-4">
+        {/* Botão de Geração 3D por IA a partir de Foto 2D */}
+        <button
+          type="button"
+          onClick={() => useEditorStore.getState().setIsImageTo3DModalOpen(true)}
+          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-400/25 to-amber-500/20 border border-amber-400/50 hover:border-amber-400 text-amber-300 hover:text-white flex items-center justify-between text-xs font-bold transition shadow-sm group"
+        >
+          <span className="flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+            <span>Gerar 3D com IA (de Foto 2D)</span>
+          </span>
+          <span className="px-1.5 py-0.5 rounded bg-amber-400 text-zinc-950 text-[10px] font-bold">
+            NOVO
+          </span>
+        </button>
+
         {/* Upload de Modelo 3D */}
         <div>
           <label className="block text-zinc-400 font-medium mb-1.5 flex items-center justify-between">
@@ -458,6 +474,20 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
                 <span className="text-zinc-500 block text-[9px]">CORES ÚNICAS</span>
                 <span className="font-bold text-amber-400">{bom.items.length} cores</span>
               </div>
+
+              {bom.rodsRequired && (
+                <div className="bg-zinc-900/80 p-2 rounded-lg border border-amber-800/40 col-span-2 flex items-center justify-between">
+                  <div>
+                    <span className="text-amber-400 block text-[9px] font-bold">HASTES ACRÍLICAS (+)</span>
+                    <span className="text-[10px] text-zinc-200 font-semibold">
+                      {bom.rodsRequired.count} hastes de Ø {bom.rodsRequired.diameterMm}mm
+                    </span>
+                  </div>
+                  <span className="text-amber-400 text-xs font-mono font-bold">
+                    {bom.rodsRequired.totalLengthCm} cm total
+                  </span>
+                </div>
+              )}
             </div>
 
             <button

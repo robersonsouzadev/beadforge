@@ -224,6 +224,15 @@ export function AssemblyGuide() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {currentLayer && currentLayer.grid.cells.flat().some((c) => c.isRodHole) && (
+                <div className="p-2.5 bg-amber-950/30 border border-amber-800/50 rounded-xl text-[11px] text-amber-300 flex items-center gap-2 shadow-inner">
+                  <span className="text-sm font-bold">🔩</span>
+                  <span>
+                    <strong>Marcadores (+) ativos:</strong> Esta camada possui furos para passagem de <strong>hastes acrílicas</strong> de reforço estrutural.
+                  </span>
+                </div>
+              )}
+
               {layerColors.length === 0 ? (
                 <div className="p-8 text-center text-zinc-500 text-xs">
                   Esta camada está vazia.

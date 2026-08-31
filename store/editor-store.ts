@@ -143,6 +143,7 @@ interface EditorState {
   showAllLayers3D: boolean;
   model3DFileName: string | null;
   isAssemblyGuideOpen: boolean;
+  isImageTo3DModalOpen: boolean;
 
   // Suporte a Modelos Multipartes (.ZIP / Múltiplos STLs)
   multipartItems: MultipartItem[];
@@ -161,6 +162,7 @@ interface EditorState {
   set3DTool: (tool: VoxelToolMode) => void;
   setModel3DFileName: (name: string | null) => void;
   setIsAssemblyGuideOpen: (open: boolean) => void;
+  setIsImageTo3DModalOpen: (open: boolean) => void;
   setMultipartItems: (items: MultipartItem[]) => void;
   updatePartColor: (partId: string, bead: BeadColor) => void;
   togglePartVisibility: (partId: string) => void;
@@ -309,11 +311,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   showAllLayers3D: true,
   model3DFileName: null,
   isAssemblyGuideOpen: false,
+  isImageTo3DModalOpen: false,
 
   // Multipart initial state
   multipartItems: [],
   isMultipartModalOpen: false,
 
+  setIsImageTo3DModalOpen: (open) => set({ isImageTo3DModalOpen: open }),
   setMultipartItems: (items) => set({ multipartItems: items, isMultipartModalOpen: items.length > 0 }),
   updatePartColor: (partId, bead) =>
     set((state) => ({

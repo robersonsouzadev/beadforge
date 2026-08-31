@@ -13,6 +13,8 @@ const redBead: BeadColor = {
   name: 'Red',
   hex: '#FF0000',
   rgb: { r: 255, g: 0, b: 0 },
+  finish: 'solid',
+  inStock: true,
 };
 
 const blueBead: BeadColor = {
@@ -20,6 +22,8 @@ const blueBead: BeadColor = {
   name: 'Blue',
   hex: '#0000FF',
   rgb: { r: 0, g: 0, b: 255 },
+  finish: 'solid',
+  inStock: true,
 };
 
 const emptyBead: BeadColor = {
@@ -27,6 +31,8 @@ const emptyBead: BeadColor = {
   name: 'Empty',
   hex: '#FFFFFF',
   rgb: { r: 255, g: 255, b: 255 },
+  finish: 'solid',
+  inStock: true,
 };
 
 describe('Grid Transformation Tools', () => {

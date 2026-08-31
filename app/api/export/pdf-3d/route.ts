@@ -32,9 +32,11 @@ export async function POST(req: NextRequest) {
         .limit(1);
 
       if (profile) {
-        studioName = profile.displayName;
+        studioName = profile.displayName || session.user.name || undefined;
         contactPhone = profile.whatsappNumber || undefined;
         instagramHandle = profile.instagramHandle || undefined;
+      } else if (session.user.name) {
+        studioName = session.user.name;
       }
     }
 

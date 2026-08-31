@@ -57,6 +57,19 @@ export function generateBOMReport(grid3D: VoxelGrid3D, projectName: string = 'Pr
   const boardsW = Math.ceil(grid3D.width / boardP);
   const boardsH = Math.ceil(grid3D.height / boardP);
 
+  const rods = grid3D.rods || [];
+  const rodsRequired =
+    rods.length > 0
+      ? {
+          count: rods.length,
+          diameterMm: rods[0].diameterMm || (grid3D.pitchMm <= 3.0 ? 2.0 : 3.0),
+          totalLengthCm: Number(
+            (rods.reduce((sum, r) => sum + r.lengthMm, 0) / 10).toFixed(1)
+          ),
+          rods,
+        }
+      : undefined;
+
   return {
     projectName,
     totalBeads: grid3D.totalBeads,
@@ -75,5 +88,6 @@ export function generateBOMReport(grid3D: VoxelGrid3D, projectName: string = 'Pr
       name: grid3D.pitchMm <= 3.0 ? 'Placa Mini 14.5x14.5cm' : 'Placa Midi 14.5x14.5cm',
       count: boardsW * boardsH,
     },
+    rodsRequired,
   };
 }

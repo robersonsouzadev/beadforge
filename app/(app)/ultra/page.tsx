@@ -8,6 +8,7 @@ import { UltraSidebar } from '@/components/ultra/UltraSidebar';
 import { LayerNavigator } from '@/components/ultra/LayerNavigator';
 import { AssemblyGuide } from '@/components/ultra/AssemblyGuide';
 import { MultipartColorManager } from '@/components/ultra/MultipartColorManager';
+import { ImageTo3DModal } from '@/components/ultra/ImageTo3DModal';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useEditorStore } from '@/store/editor-store';
 import { PALETTES } from '@/data/palettes';
@@ -213,6 +214,7 @@ function Ultra3DContent() {
       <MobileBottomNav />
       <AssemblyGuide />
       <MultipartColorManager />
+      <ImageTo3DModal />
     </div>
   );
 }

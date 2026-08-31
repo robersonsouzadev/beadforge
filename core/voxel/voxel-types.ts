@@ -31,6 +31,17 @@ export interface VoxelLayer {
   isLocked: boolean;
 }
 
+export interface SupportRod {
+  id: string;
+  x: number; // Coluna (X)
+  y: number; // Linha (Y)
+  startZ: number; // Camada inicial
+  endZ: number; // Camada final
+  lengthLayers: number; // Quantidade de camadas que atravessa
+  lengthMm: number; // Comprimento em milímetros
+  diameterMm: number; // Diâmetro da haste (2mm ou 3mm)
+}
+
 export interface VoxelGrid3D {
   width: number; // Dimensão X (Colunas)
   height: number; // Dimensão Y (Linhas)
@@ -39,6 +50,7 @@ export interface VoxelGrid3D {
   totalBeads: number;
   totalLayers: number;
   pitchMm: number; // Distância entre pinos / altura do bead (2.6mm ou 5.0mm)
+  rods?: SupportRod[]; // Hastes acrílicas de sustentação calculadas
 }
 
 export type VoxelToolMode = 'paint' | 'add' | 'remove' | 'dropper' | 'box';
@@ -81,5 +93,11 @@ export interface BOMReport {
   boardsRequired: {
     name: string;
     count: number;
+  };
+  rodsRequired?: {
+    count: number;
+    diameterMm: number;
+    totalLengthCm: number;
+    rods: SupportRod[];
   };
 }

@@ -293,9 +293,27 @@ function renderPDFFooter(
   pageH: number
 ) {
   const isWatermarkActive = options.watermark || options.isPro === false;
+
+  // Marca d'água diagonal personalizada com nome do usuário e data (Benchmark Beads3D)
+  if (isWatermarkActive || options.studioName) {
+    const userName = options.studioName || 'BeadForge Studio';
+    const dateStr = new Date().toISOString().split('T')[0];
+    const watermarkText = `${userName.toUpperCase()} ${dateStr} • BEADFORGE.COM.BR`;
+
+    doc.save();
+    doc.fontSize(14).fillColor('#E4E4E7');
+    doc.opacity(0.3);
+    doc.rotate(-35, { origin: [pageW / 2, pageH / 2] });
+
+    doc.text(watermarkText, -100, pageH / 2 - 120, { width: pageW + 300, align: 'center' });
+    doc.text(watermarkText, -100, pageH / 2, { width: pageW + 300, align: 'center' });
+    doc.text(watermarkText, -100, pageH / 2 + 120, { width: pageW + 300, align: 'center' });
+    doc.restore();
+  }
+
   if (isWatermarkActive) {
     doc.fontSize(6.5).fillColor('#999999').text(
-      'Criado gratuitamente com BeadForge Studio • app.hamabeadsbrasil.com.br',
+      'Criado com BeadForge Studio • app.hamabeadsbrasil.com.br',
       margin,
       pageH + margin - 8,
       { width: pageW, align: 'center' }
@@ -452,6 +470,21 @@ export function generate3DAssemblyPDF(
     curX += swatchSlotW;
   }
 
+  // Seção de Hastes Acrílicas de Sustentação (+)
+  if (grid3D.rods && grid3D.rods.length > 0) {
+    const rodDiameter = grid3D.rods[0].diameterMm || 2.0;
+    const rodSectionY = curY + swatchSlotH + 8;
+    doc.fontSize(9.5).fillColor('#18181B').text(
+      `Hastes Acrílicas de Sustentação (+) — ${grid3D.rods.length} hastes de Ø ${rodDiameter}mm necessárias:`,
+      margin,
+      rodSectionY
+    );
+    const rodDetails = grid3D.rods
+      .map((r) => `${r.id}: ${r.lengthMm}mm (Camadas ${r.startZ + 1} a ${r.endZ + 1})`)
+      .join(' • ');
+    doc.fontSize(7.5).fillColor('#52525B').text(rodDetails, margin, rodSectionY + 12, { width: pageW });
+  }
+
   renderPDFFooter(doc, options, margin, pageW, pageH);
 
   // ─────────────────────────────────────────────────────────────
@@ -503,7 +536,25 @@ export function generate3DAssemblyPDF(
         if (!cell.isEmpty && cell.beadCode) {
           doc.rect(cellX, cellY, cellSize, cellSize).fill(cell.hex);
 
-          if (showCodes && cellSize >= 6.5) {
+          if (cell.isRodHole) {
+            // Marcador de Haste Acrílica (+) de Reforço Estrutural (Estilo Beads3D)
+            const plusSize = Math.max(2.2, cellSize * 0.35);
+            const midX = cellX + cellSize / 2;
+            const midY = cellY + cellSize / 2;
+            const plusColor = cell.textColor || '#000000';
+
+            doc.moveTo(midX - plusSize, midY)
+              .lineTo(midX + plusSize, midY)
+              .lineWidth(1.2)
+              .strokeColor(plusColor)
+              .stroke();
+
+            doc.moveTo(midX, midY - plusSize)
+              .lineTo(midX, midY + plusSize)
+              .lineWidth(1.2)
+              .strokeColor(plusColor)
+              .stroke();
+          } else if (showCodes && cellSize >= 6.5) {
             const fontSize = Math.max(3.5, Math.floor(cellSize * 0.42));
             const textColor = cell.textColor || '#000000';
             doc.fontSize(fontSize).fillColor(textColor).text(

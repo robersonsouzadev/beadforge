@@ -174,6 +174,19 @@ export function LayerCanvas2D({
               );
               ctx.fill();
             }
+          } else if (cell.isRodHole) {
+            // Desenha o marcador de haste acrílica (+)
+            const midX = cellX + currentCellSize / 2;
+            const midY = cellY + currentCellSize / 2;
+            const plusSize = Math.max(3, currentCellSize * 0.3);
+            ctx.strokeStyle = isHighlighted ? (cell.textColor || '#000000') : 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = Math.max(1.5, currentCellSize * 0.12);
+            ctx.beginPath();
+            ctx.moveTo(midX - plusSize, midY);
+            ctx.lineTo(midX + plusSize, midY);
+            ctx.moveTo(midX, midY - plusSize);
+            ctx.lineTo(midX, midY + plusSize);
+            ctx.stroke();
           } else {
             // Modo Molde: Código da cor com contraste
             if (currentCellSize >= 5.5 && cell.beadCode) {
