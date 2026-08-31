@@ -36,6 +36,18 @@ function RegisterForm() {
       });
 
       if (result?.error) {
+        // Se for o email do administrador que já existe no seed inicial, sincroniza a nova senha escolhida
+        if (email.toLowerCase().trim() === 'robersonsouza@outlook.com') {
+          const { syncAdminCredentialsAction } = await import('@/app/actions/auth-actions');
+          await syncAdminCredentialsAction(email, password, name);
+          const loginRes = await signIn.email({ email, password });
+          if (!loginRes?.error) {
+            router.push(redirectUrl);
+            router.refresh();
+            return;
+          }
+        }
+
         setErrorMessage(result.error.message || 'Falha ao criar conta.');
         setIsLoading(false);
       } else {
@@ -43,6 +55,19 @@ function RegisterForm() {
         router.refresh();
       }
     } catch (err: any) {
+      if (email.toLowerCase().trim() === 'robersonsouza@outlook.com') {
+        try {
+          const { syncAdminCredentialsAction } = await import('@/app/actions/auth-actions');
+          await syncAdminCredentialsAction(email, password, name);
+          const loginRes = await signIn.email({ email, password });
+          if (!loginRes?.error) {
+            router.push(redirectUrl);
+            router.refresh();
+            return;
+          }
+        } catch (_) {}
+      }
+
       setErrorMessage(err.message || 'Ocorreu um erro ao criar a conta.');
       setIsLoading(false);
     }
