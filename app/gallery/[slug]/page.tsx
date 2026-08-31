@@ -25,13 +25,17 @@ import {
   Scissors,
   CheckCircle2,
 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface PatternPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export default function GalleryPatternPage({ params }: PatternPageProps) {
-  const { slug } = use(params);
+export default function PatternDetailsPage({ params }: PatternPageProps) {
+  const { t } = useTranslation();
+  const resolvedParams = use(params);
+  const { slug } = resolvedParams;
   const router = useRouter();
   const [pattern, setPattern] = useState<PatternDetailsDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,15 +142,17 @@ export default function GalleryPatternPage({ params }: PatternPageProps) {
               href="/editor"
               className="text-xs font-semibold text-zinc-400 hover:text-white transition px-2.5 py-1"
             >
-              Editor 2D
+              {t.common.editor}
             </Link>
+
+            <LanguageSwitcher />
 
             <button
               onClick={handleShare}
               className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700 shadow-sm"
             >
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Copiado!' : 'Compartilhar'}</span>
+              <span>{copiedLink ? t.common.copied : t.common.share}</span>
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Sparkles, ArrowRight } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function MarketingLayout({
   children,
@@ -36,18 +37,20 @@ export default function MarketingLayout({
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <LanguageSwitcher />
+
             <Link
               href="/login"
-              className="px-4 py-2 text-xs sm:text-sm font-medium text-zinc-300 hover:text-white transition"
+              className="px-3 py-2 text-xs sm:text-sm font-medium text-zinc-300 hover:text-white transition"
             >
               Entrar
             </Link>
             <Link
               href="/register"
-              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:scale-[1.02]"
             >
-              <span>Começar Grátis</span>
+              <span>Começar</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

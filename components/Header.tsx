@@ -17,6 +17,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { PublishPatternModal } from '@/components/gallery/PublishPatternModal';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface HeaderProps {
   onSave?: () => void;
@@ -429,6 +430,9 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
             <span className="hidden sm:inline">Publicar</span>
           </button>
         )}
+
+        {/* Seletor de Idioma */}
+        <LanguageSwitcher />
 
         {/* Menu Dropdown de Exportação */}
         <div className="relative">

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { LanguageProvider } from '@/lib/i18n';
 
 export const metadata: Metadata = {
   title: 'BeadForge Studio — Gerador Profissional de Moldes para Beads',
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className="antialiased min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-amber-400/30 selection:text-amber-200">
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

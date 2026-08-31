@@ -20,24 +20,27 @@ import {
   User,
   Plus,
 } from 'lucide-react';
-
-const CATEGORIES = [
-  { id: 'all', label: 'Todos os Moldes' },
-  { id: 'games', label: '🎮 Games' },
-  { id: 'anime', label: '⛩️ Anime & Mangá' },
-  { id: 'geek', label: '⚡ Geek & Heróis' },
-  { id: 'cartoons', label: '📺 Desenhos' },
-  { id: 'decor', label: '🎨 Decoração' },
-  { id: 'animals', label: '🐾 Animais' },
-];
+import { useTranslation } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export default function GalleryPage() {
+  const { t } = useTranslation();
   const [patterns, setPatterns] = useState<GalleryPatternDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedSort, setSelectedSort] = useState<'popular' | 'recent' | 'small'>('popular');
   const [likedSlugs, setLikedSlugs] = useState<Set<string>>(new Set());
+
+  const categories = [
+    { id: 'all', label: t.gallery.allPatterns },
+    { id: 'games', label: t.gallery.games },
+    { id: 'anime', label: t.gallery.anime },
+    { id: 'geek', label: t.gallery.geek },
+    { id: 'cartoons', label: t.gallery.cartoons },
+    { id: 'decor', label: t.gallery.decor },
+    { id: 'animals', label: t.gallery.animals },
+  ];
 
   const loadPatterns = async () => {
     setIsLoading(true);
@@ -97,36 +100,32 @@ export default function GalleryPage() {
 
           <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-zinc-400">
             <Link href="/" className="hover:text-white transition">
-              Início
+              {t.common.home}
             </Link>
             <Link href="/editor" className="hover:text-white transition">
-              Editor 2D
+              {t.common.editor}
             </Link>
             <Link href="/gallery" className="text-amber-400 font-bold transition">
-              Galeria de Moldes
+              {t.common.gallery}
             </Link>
             <Link href="/dashboard" className="hover:text-white transition">
-              Meus Projetos
+              {t.common.dashboard}
             </Link>
             <Link href="/pricing" className="hover:text-white transition">
-              Planos
+              {t.common.pricing}
             </Link>
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="text-xs font-semibold text-zinc-400 hover:text-white transition flex items-center gap-1 sm:hidden"
-          >
-            <span>Início</span>
-          </Link>
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <LanguageSwitcher />
+
           <Link
             href="/editor"
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-xs font-bold rounded-xl shadow transition active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Criar Molde</span>
+            <span>{t.common.createPattern}</span>
           </Link>
         </div>
       </header>
@@ -138,15 +137,15 @@ export default function GalleryPage() {
         <div className="max-w-4xl mx-auto space-y-3.5 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 text-xs font-bold border border-amber-400/25">
             <Globe className="w-3.5 h-3.5" />
-            <span>Galeria Pública da Comunidade</span>
+            <span>{t.gallery.badge}</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Descubra e Baixe Moldes de <span className="text-amber-400">Fuse Beads</span>
+            {t.gallery.titleMain} <span className="text-amber-400">{t.gallery.titleHighlight}</span>
           </h1>
 
           <p className="text-xs sm:text-sm text-zinc-400 max-w-xl mx-auto">
-            Milhares de ideias e padrões em pixel art criados por ateliês e artesãos do Brasil. Remixe e edite qualquer molde gratuitamente.
+            {t.gallery.description}
           </p>
 
           {/* Search Form */}
@@ -159,14 +158,14 @@ export default function GalleryPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por Mario, Pokémon, Chaveiro, Anime..."
+              placeholder={t.gallery.searchPlaceholder}
               className="w-full bg-transparent text-xs text-white placeholder:text-zinc-500 focus:outline-none px-2 py-1.5"
             />
             <button
               type="submit"
               className="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs rounded-xl shadow transition shrink-0"
             >
-              Buscar
+              {t.gallery.searchButton}
             </button>
           </form>
         </div>
@@ -177,7 +176,7 @@ export default function GalleryPage() {
         {/* Category Pills & Sort Dropdown */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-zinc-800/80 pb-4">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
@@ -193,15 +192,15 @@ export default function GalleryPage() {
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-500">Ordenar por:</span>
+            <span className="text-zinc-500">{t.gallery.sortBy}</span>
             <select
               value={selectedSort}
               onChange={(e) => setSelectedSort(e.target.value as any)}
               className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-amber-400"
             >
-              <option value="popular">Mais Populares</option>
-              <option value="recent">Mais Recentes</option>
-              <option value="small">Menos Beads</option>
+              <option value="popular">{t.gallery.sortPopular}</option>
+              <option value="recent">{t.gallery.sortRecent}</option>
+              <option value="small">{t.gallery.sortSmall}</option>
             </select>
           </div>
         </div>
@@ -210,7 +209,7 @@ export default function GalleryPage() {
         {isLoading ? (
           <div className="py-24 text-center text-zinc-500 flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-mono">Carregando moldes da galeria...</span>
+            <span className="text-xs font-mono">{t.common.loading}</span>
           </div>
         ) : patterns.length === 0 ? (
           <div className="text-center py-16 px-4 rounded-2xl bg-zinc-900/30 border border-dashed border-zinc-800 space-y-4">
@@ -218,16 +217,16 @@ export default function GalleryPage() {
               <Globe className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-zinc-300">
-              Nenhum molde encontrado para esta categoria ou busca
+              {t.gallery.noPatterns}
             </h3>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Seja o primeiro a publicar um molde na galeria pública e ajude outros criadores de beads!
+              {t.gallery.noPatternsSub}
             </p>
             <Link
               href="/editor"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-400 text-zinc-950 text-xs font-bold rounded-xl shadow hover:bg-amber-300 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-400 text-zinc-950 text-xs font-bold rounded-xl shadow hover:bg-amber-300 transition"
             >
-              <span>Criar Molde no Editor</span>
+              <span>{t.gallery.createFirst}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

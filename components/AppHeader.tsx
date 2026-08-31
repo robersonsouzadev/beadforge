@@ -31,6 +31,7 @@ import {
   Users,
   Globe,
 } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface AppHeaderProps {
   user: {
@@ -531,6 +532,9 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
             <span>PRO</span>
           </div>
         )}
+
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
         {/* User Dropdown or Guest Auth CTA */}
         {user.isGuest ? (

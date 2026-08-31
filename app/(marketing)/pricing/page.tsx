@@ -4,23 +4,21 @@ import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptions';
 import { createCheckoutSession } from '@/app/actions/billing';
+import { useTranslation } from '@/lib/i18n';
 import {
   Check,
   X,
   Sparkles,
-  Zap,
   ShieldCheck,
   CreditCard,
-  QrCode,
   Globe2,
   Loader2,
   Crown,
-  Boxes,
   ArrowRight,
 } from 'lucide-react';
 
 export default function PricingPage() {
-  const [currency, setCurrency] = useState<'BRL' | 'USD'>('BRL');
+  const { t, currency, setCurrency } = useTranslation();
   const [isYearly, setIsYearly] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -51,15 +49,15 @@ export default function PricingPage() {
       <div className="text-center max-w-3xl mx-auto space-y-5">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5" />
-          Planos Transparentes & Sem Pegadinhas
+          {t.pricing.badge}
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-          O Sistema de Produção que se <span className="text-amber-400">Paga no 1º Pedido</span>
+          {t.pricing.titleMain} <span className="text-amber-400">{t.pricing.titleHighlight}</span>
         </h1>
 
         <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto">
-          Comece gratuitamente ou assine o plano <strong>Studio</strong> para ter controle total de estoque, orçamentos automáticos e aprovação de provas no WhatsApp.
+          {t.pricing.description}
         </p>
 
         {/* Currency & Period Switchers */}
@@ -98,7 +96,7 @@ export default function PricingPage() {
               }`}
               onClick={() => setIsYearly(false)}
             >
-              Mensal
+              {t.pricing.monthly}
             </span>
 
             <button
@@ -119,9 +117,9 @@ export default function PricingPage() {
               }`}
               onClick={() => setIsYearly(true)}
             >
-              <span>Anual</span>
+              <span>{t.pricing.yearly}</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-[11px] font-bold border border-emerald-500/30">
-                Economize até 35%
+                {t.pricing.saveBadge}
               </span>
             </span>
           </div>
@@ -134,8 +132,8 @@ export default function PricingPage() {
         <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between hover:border-zinc-700 transition">
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold text-white">{freePlan.name}</h3>
-              <p className="text-xs text-zinc-400 mt-1">{freePlan.description}</p>
+              <h3 className="text-lg font-bold text-white">{t.pricing.freeName}</h3>
+              <p className="text-xs text-zinc-400 mt-1">{t.pricing.freeDesc}</p>
             </div>
 
             <div className="flex items-baseline gap-1">
@@ -149,7 +147,7 @@ export default function PricingPage() {
 
             <div className="border-t border-zinc-800 pt-6 space-y-3">
               <span className="text-[11px] font-bold uppercase text-zinc-400 tracking-wider">
-                Recursos Inclusos:
+                {t.pricing.includedHeading}
               </span>
               <ul className="space-y-2.5 text-xs text-zinc-300">
                 {freePlan.features.map((feat, idx) => (
@@ -173,7 +171,7 @@ export default function PricingPage() {
               href="/editor"
               className="w-full py-3 bg-zinc-800 hover:bg-zinc-750 text-white font-bold text-xs rounded-xl flex items-center justify-center transition border border-zinc-700"
             >
-              Criar Molde sem Cadastro
+              {t.pricing.freeCta}
             </Link>
           </div>
         </div>
@@ -183,11 +181,11 @@ export default function PricingPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-white">{proPlan.name}</h3>
-                <p className="text-xs text-zinc-400 mt-1">{proPlan.description}</p>
+                <h3 className="text-lg font-bold text-white">{t.pricing.creatorName}</h3>
+                <p className="text-xs text-zinc-400 mt-1">{t.pricing.creatorDesc}</p>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[10px] font-bold border border-zinc-700">
-                Hobby Pro
+                Pro
               </span>
             </div>
 
@@ -207,7 +205,7 @@ export default function PricingPage() {
 
             <div className="border-t border-zinc-800 pt-6 space-y-3">
               <span className="text-[11px] font-bold uppercase text-zinc-400 tracking-wider">
-                Recursos Inclusos:
+                {t.pricing.includedHeading}
               </span>
               <ul className="space-y-2.5 text-xs text-zinc-300">
                 {proPlan.features.map((feat, idx) => (
@@ -232,7 +230,7 @@ export default function PricingPage() {
               disabled={isPending}
               className="w-full py-3 bg-zinc-800 hover:bg-zinc-750 text-amber-400 border border-amber-400/30 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition"
             >
-              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Assinar Creator</span>}
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>{t.pricing.creatorCta}</span>}
             </button>
           </div>
         </div>
@@ -241,13 +239,13 @@ export default function PricingPage() {
         <div className="bg-gradient-to-b from-amber-500/10 via-zinc-900 to-zinc-950 border-2 border-amber-500 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative">
           <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider py-1 px-3.5 rounded-full shadow-lg flex items-center gap-1">
             <Crown className="w-3.5 h-3.5 fill-zinc-950" />
-            <span>Mais Recomendado para Ateliês</span>
+            <span>{t.pricing.studioBadge}</span>
           </div>
 
           <div className="space-y-6 mt-2">
             <div>
-              <h3 className="text-lg font-black text-white">{studioPlan.name}</h3>
-              <p className="text-xs text-zinc-300 mt-1">{studioPlan.description}</p>
+              <h3 className="text-lg font-black text-white">{t.pricing.studioName}</h3>
+              <p className="text-xs text-zinc-300 mt-1">{t.pricing.studioDesc}</p>
             </div>
 
             <div>
@@ -266,7 +264,7 @@ export default function PricingPage() {
 
             <div className="border-t border-zinc-800 pt-6 space-y-3">
               <span className="text-[11px] font-bold uppercase text-amber-400 tracking-wider">
-                O Ecossistema Completo:
+                {t.pricing.studioHeading}
               </span>
               <ul className="space-y-2.5 text-xs text-zinc-200">
                 {studioPlan.features.map((feat, idx) => (
@@ -289,7 +287,7 @@ export default function PricingPage() {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <span>Assinar Studio Ateliê</span>
+                  <span>{t.pricing.studioCta}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -303,24 +301,24 @@ export default function PricingPage() {
         <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-3">
           <Globe2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <div>
-            <span className="font-bold text-white block">Pagamento Global (PIX, Cartão & Carteiras)</span>
-            <span className="text-zinc-500 text-[11px]">Aceito no Brasil e em mais de 135 países</span>
+            <span className="font-bold text-white block">{t.pricing.globalPaymentTitle}</span>
+            <span className="text-zinc-500 text-[11px]">{t.pricing.globalPaymentDesc}</span>
           </div>
         </div>
 
         <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
           <div>
-            <span className="font-bold text-white block">Garantia Incondicional de 7 Dias</span>
-            <span className="text-zinc-500 text-[11px]">Reembolso total se não amar o Studio</span>
+            <span className="font-bold text-white block">{t.pricing.guaranteeTitle}</span>
+            <span className="text-zinc-500 text-[11px]">{t.pricing.guaranteeDesc}</span>
           </div>
         </div>
 
         <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-3">
           <CreditCard className="w-5 h-5 text-sky-400 shrink-0" />
           <div>
-            <span className="font-bold text-white block">Cancele quando quiser</span>
-            <span className="text-zinc-500 text-[11px]">Sem fidelidade ou multas rescisórias</span>
+            <span className="font-bold text-white block">{t.pricing.cancelTitle}</span>
+            <span className="text-zinc-500 text-[11px]">{t.pricing.cancelDesc}</span>
           </div>
         </div>
       </div>
