@@ -138,6 +138,60 @@ export const costConfig = pgTable('cost_config', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const client = pgTable('client', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'), // WhatsApp
+  instagram: text('instagram'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const order = pgTable('order', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  clientId: text('client_id').references(() => client.id, { onDelete: 'set null' }),
+  projectId: text('project_id').references(() => project.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  status: text('status').notNull().default('draft'),
+  // 'draft' | 'quoted' | 'pending_approval' | 'approved' | 'in_production' | 'completed' | 'delivered' | 'cancelled'
+  quotedPriceBrl: numeric('quoted_price_brl', { precision: 10, scale: 2 }),
+  materialCostBrl: numeric('material_cost_brl', { precision: 10, scale: 2 }),
+  laborCostBrl: numeric('labor_cost_brl', { precision: 10, scale: 2 }),
+  finalPriceBrl: numeric('final_price_brl', { precision: 10, scale: 2 }),
+  channel: text('channel').default('direct'), // 'direct' | 'shopee' | 'mercadolivre' | 'elo7' | 'whatsapp'
+  dueDate: timestamp('due_date'),
+  completedAt: timestamp('completed_at'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const approval = pgTable('approval', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id')
+    .notNull()
+    .references(() => order.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(), // UUID para URL pública
+  patternSnapshot: jsonb('pattern_snapshot').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  status: text('status').notNull().default('pending'),
+  // 'pending' | 'approved' | 'revision_requested'
+  revisionCount: integer('revision_count').default(0),
+  maxRevisions: integer('max_revisions').default(3),
+  clientComment: text('client_comment'),
+  respondedAt: timestamp('responded_at'),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Subscription = typeof subscription.$inferSelect;
@@ -148,3 +202,9 @@ export type InventoryItem = typeof inventoryItem.$inferSelect;
 export type NewInventoryItem = typeof inventoryItem.$inferInsert;
 export type CostConfig = typeof costConfig.$inferSelect;
 export type NewCostConfig = typeof costConfig.$inferInsert;
+export type Client = typeof client.$inferSelect;
+export type NewClient = typeof client.$inferInsert;
+export type Order = typeof order.$inferSelect;
+export type NewOrder = typeof order.$inferInsert;
+export type Approval = typeof approval.$inferSelect;
+export type NewApproval = typeof approval.$inferInsert;
