@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore } from '@/store/editor-store';
 import { VoxelEngine } from '@/core/voxel/voxelizer';
 import { CreditPurchaseModal } from '@/components/CreditPurchaseModal';
 import { getUserAiCredits } from '@/app/actions/billing';
+import { removeBackgroundFromImage } from '@/core/image/client-bg-remover';
 import {
   X,
   Sparkles,
@@ -18,6 +19,8 @@ import {
   ShieldAlert,
   Coins,
   Zap,
+  Scissors,
+  Check,
 } from 'lucide-react';
 
 export function ImageTo3DModal() {
@@ -32,7 +35,15 @@ export function ImageTo3DModal() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [rawPreviewUrl, setRawPreviewUrl] = useState<string | null>(null);
+  const [processedPreviewUrl, setProcessedPreviewUrl] = useState<string | null>(null);
+  const [processedBlob, setProcessedBlob] = useState<Blob | null>(null);
+  const [isProcessingBg, setIsProcessingBg] = useState(false);
+
+  // Background removal options
+  const [autoRemoveBg, setAutoRemoveBg] = useState<boolean>(true);
+  const [bgTolerance, setBgTolerance] = useState<number>(30);
+
   const [beadSize, setBeadSize] = useState<'mini' | 'midi'>('mini');
   const [finishedScale, setFinishedScale] = useState<'small' | 'medium' | 'large'>('medium');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -41,13 +52,33 @@ export function ImageTo3DModal() {
   const [userCredits, setUserCredits] = useState<number | null>(null);
   const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isImageTo3DModalOpen) {
       getUserAiCredits().then((c) => setUserCredits(c)).catch(() => setUserCredits(5));
     }
   }, [isImageTo3DModalOpen]);
 
-  if (!isImageTo3DModalOpen) return null;
+  // Processa a imagem para remover o fundo automaticamente
+  const processImageBg = async (file: File, enabled: boolean, tolerance: number) => {
+    if (!enabled) {
+      setProcessedPreviewUrl(null);
+      setProcessedBlob(null);
+      return;
+    }
+
+    setIsProcessingBg(true);
+    try {
+      const { dataUrl, blob } = await removeBackgroundFromImage(file, { tolerance });
+      setProcessedPreviewUrl(dataUrl);
+      setProcessedBlob(blob);
+    } catch (err) {
+      console.warn('Falha ao remover fundo automaticamente, usando imagem original:', err);
+      setProcessedPreviewUrl(null);
+      setProcessedBlob(null);
+    } finally {
+      setIsProcessingBg(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,7 +87,9 @@ export function ImageTo3DModal() {
     setSelectedFile(file);
     setError(null);
     const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    setRawPreviewUrl(url);
+
+    processImageBg(file, autoRemoveBg, bgTolerance);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -67,19 +100,43 @@ export function ImageTo3DModal() {
     setSelectedFile(file);
     setError(null);
     const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    setRawPreviewUrl(url);
+
+    processImageBg(file, autoRemoveBg, bgTolerance);
   };
+
+  const handleToggleBg = (checked: boolean) => {
+    setAutoRemoveBg(checked);
+    if (selectedFile) {
+      processImageBg(selectedFile, checked, bgTolerance);
+    }
+  };
+
+  const handleToleranceChange = (tolerance: number) => {
+    setBgTolerance(tolerance);
+    if (selectedFile && autoRemoveBg) {
+      processImageBg(selectedFile, true, tolerance);
+    }
+  };
+
+  if (!isImageTo3DModalOpen) return null;
+
+  const currentActivePreview = processedPreviewUrl || rawPreviewUrl;
 
   const handleGenerate = async () => {
     if (!selectedFile) return;
 
     setIsGenerating(true);
     setError(null);
-    setStepStatus('Enviando imagem para o motor de IA...');
+    setStepStatus('Enviando imagem isolada para o motor de IA...');
 
     try {
       const formData = new FormData();
-      formData.append('image', selectedFile);
+      const imageToSend = processedBlob
+        ? new File([processedBlob], selectedFile.name.replace(/\.[^/.]+$/, '') + '.png', { type: 'image/png' })
+        : selectedFile;
+
+      formData.append('image', imageToSend);
       formData.append('beadSize', beadSize);
       formData.append('finishedScale', finishedScale);
 
@@ -108,9 +165,9 @@ export function ImageTo3DModal() {
 
       // Cria a imagem para amostragem de pixels local
       const img = new Image();
-      img.src = data.imageDataUri || previewUrl!;
+      img.src = data.imageDataUri || currentActivePreview!;
       await new Promise((resolve) => {
-        img.onload = resolve;
+        img.onload = () => resolve(true);
       });
 
       const canvas = document.createElement('canvas');
@@ -123,6 +180,7 @@ export function ImageTo3DModal() {
       const rawVoxels: Array<{ x: number; y: number; z: number; rgb: { r: number; g: number; b: number } }> = [];
 
       // Extrusão volumétrica inteligente com suavização cilíndrica / elipsoidal 3D
+      // Processa SOMENTE pixels com opacidade (sem o fundo branco/transparente)
       for (let y = 0; y < dims.h; y++) {
         for (let x = 0; x < dims.w; x++) {
           const idx = (y * dims.w + x) * 4;
@@ -131,7 +189,13 @@ export function ImageTo3DModal() {
           const b = imgData.data[idx + 2];
           const a = imgData.data[idx + 3];
 
+          // Ignora totalmente pixels transparentes ou de fundo
           if (a > 30) {
+            // Se o fundo não tiver sido removido e for praticamente branco puro (> 248), também ignora
+            if (!autoRemoveBg && r > 248 && g > 248 && b > 248) {
+              continue;
+            }
+
             // Calcula espessura volumétrica baseada na distância do centro da silhueta
             const normX = (x / dims.w - 0.5) * 2;
             const normY = (y / dims.h - 0.5) * 2;
@@ -215,7 +279,7 @@ export function ImageTo3DModal() {
               <span className="text-xs text-zinc-300 font-medium">
                 Saldo:{' '}
                 <strong className="text-amber-400 font-mono">
-                  {userCredits ?? 0} {userCredits === 1 ? 'crédito' : 'créditos'}
+                  {userCredits !== null ? `${userCredits} ${userCredits === 1 ? 'crédito' : 'créditos'}` : 'Carregando...'}
                 </strong>
               </span>
               <span className="text-[10px] text-zinc-500 hidden sm:inline">(Gasta 1 crédito por modelo)</span>
@@ -233,8 +297,14 @@ export function ImageTo3DModal() {
 
           {/* Upload Zone */}
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-              1. Selecione a Imagem de Origem
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>1. Imagem do Modelo</span>
+              {selectedFile && isProcessingBg && (
+                <span className="text-[10px] text-amber-400 flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Isolando personagem...</span>
+                </span>
+              )}
             </label>
             <input
               ref={fileInputRef}
@@ -248,22 +318,22 @@ export function ImageTo3DModal() {
               onClick={() => !isGenerating && fileInputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className="border-2 border-dashed border-zinc-700 hover:border-amber-400/80 bg-zinc-950/60 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition group"
+              className="border-2 border-dashed border-zinc-700 hover:border-amber-400/80 bg-zinc-950/60 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition group"
             >
-              {previewUrl ? (
-                <div className="relative w-full aspect-video max-h-40 rounded-lg overflow-hidden flex items-center justify-center bg-zinc-900 border border-zinc-800">
+              {currentActivePreview ? (
+                <div className="relative w-full aspect-video max-h-44 rounded-lg overflow-hidden flex items-center justify-center bg-zinc-950 border border-zinc-800 bg-[radial-gradient(#3f3f46_1px,transparent_1px)] [background-size:12px_12px]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={previewUrl}
-                    alt="Preview 2D"
-                    className="max-h-full max-w-full object-contain"
+                    src={currentActivePreview}
+                    alt="Preview 2D Isolado"
+                    className="max-h-full max-w-full object-contain drop-shadow-md"
                   />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs font-semibold">
-                    Trocar Imagem
+                    Clique para trocar imagem
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-4">
+                <div className="text-center py-5">
                   <ImageIcon className="w-10 h-10 text-zinc-600 group-hover:text-amber-400 transition mx-auto mb-2" />
                   <p className="text-xs font-semibold text-zinc-300">
                     Arraste ou clique para carregar uma imagem
@@ -273,6 +343,53 @@ export function ImageTo3DModal() {
               )}
             </div>
           </div>
+
+          {/* ✂️ Card de Remoção Inteligente de Fundo */}
+          {selectedFile && (
+            <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoRemoveBg}
+                  onChange={(e) => handleToggleBg(e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-400 focus:ring-amber-400 focus:ring-offset-zinc-900"
+                />
+                <div>
+                  <span className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
+                    <Scissors className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Remover Fundo Branco / Sólido</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-400 block">
+                    Elimina as bordas brancas para esculpir apenas o personagem
+                  </span>
+                </div>
+              </label>
+
+              {autoRemoveBg && (
+                <div className="flex items-center gap-1.5 self-end sm:self-auto text-[11px] bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-800">
+                  <span className="text-zinc-500 text-[10px]">Tolerância:</span>
+                  {[
+                    { id: 20, label: 'Suave' },
+                    { id: 35, label: 'Normal' },
+                    { id: 50, label: 'Forte' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleToleranceChange(t.id)}
+                      className={`px-2 py-0.5 rounded-md font-semibold transition text-[10px] ${
+                        bgTolerance === t.id
+                          ? 'bg-amber-400 text-zinc-950 font-bold shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Configurações de Escala & Beads */}
           <div className="grid grid-cols-2 gap-3">
@@ -310,45 +427,26 @@ export function ImageTo3DModal() {
               <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
                 Nível de Detalhe / Altura
               </label>
-              <div className="grid grid-cols-3 gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => setFinishedScale('small')}
-                  className={`py-1.5 rounded-lg font-semibold transition ${
-                    finishedScale === 'small'
-                      ? 'bg-amber-400 text-zinc-950 font-bold shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Pequeno
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFinishedScale('medium')}
-                  className={`py-1.5 rounded-lg font-semibold transition ${
-                    finishedScale === 'medium'
-                      ? 'bg-amber-400 text-zinc-950 font-bold shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Médio
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFinishedScale('large')}
-                  className={`py-1.5 rounded-lg font-semibold transition ${
-                    finishedScale === 'large'
-                      ? 'bg-amber-400 text-zinc-950 font-bold shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Grande
-                </button>
+              <div className="grid grid-cols-3 gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
+                {(['small', 'medium', 'large'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setFinishedScale(s)}
+                    className={`py-1.5 px-1 rounded-lg text-xs font-semibold transition capitalize ${
+                      finishedScale === s
+                        ? 'bg-amber-400 text-zinc-950 font-bold shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    {s === 'small' ? 'Pequeno' : s === 'medium' ? 'Médio' : 'Grande'}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Status e Mensagens de Carregamento */}
+          {/* Status do Processamento */}
           {isGenerating && (
             <div className="p-3.5 bg-amber-950/30 border border-amber-500/40 rounded-xl space-y-2 animate-pulse">
               <div className="flex items-center gap-2 text-amber-300 text-xs font-bold">
@@ -388,7 +486,7 @@ export function ImageTo3DModal() {
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={!selectedFile || isGenerating}
+              disabled={!selectedFile || isGenerating || isProcessingBg}
               className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-2 transition shadow-lg disabled:opacity-40 disabled:pointer-events-none"
             >
               {isGenerating ? (

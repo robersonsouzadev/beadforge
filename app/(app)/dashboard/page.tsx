@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   const isLimitReached = !sub.isPro && projectCount >= maxProjects;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 space-y-8 w-full">
       {/* ── Welcome Banner ── */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-950 p-6 rounded-2xl border border-zinc-800 shadow-lg">
         <div>
