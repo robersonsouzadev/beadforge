@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Filter,
   User,
+  Plus,
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -82,11 +83,59 @@ export default function GalleryPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between select-none">
+      {/* ── Top Navigation Header ── */}
+      <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition">
+              <Sparkles className="w-4 h-4 text-zinc-950 font-bold" />
+            </div>
+            <span className="text-lg font-black tracking-tight text-white">
+              Bead<span className="text-amber-400">Forge</span>
+            </span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-zinc-400">
+            <Link href="/" className="hover:text-white transition">
+              Início
+            </Link>
+            <Link href="/editor" className="hover:text-white transition">
+              Editor 2D
+            </Link>
+            <Link href="/gallery" className="text-amber-400 font-bold transition">
+              Galeria de Moldes
+            </Link>
+            <Link href="/dashboard" className="hover:text-white transition">
+              Meus Projetos
+            </Link>
+            <Link href="/pricing" className="hover:text-white transition">
+              Planos
+            </Link>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="text-xs font-semibold text-zinc-400 hover:text-white transition flex items-center gap-1 sm:hidden"
+          >
+            <span>Início</span>
+          </Link>
+          <Link
+            href="/editor"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-xs font-bold rounded-xl shadow transition active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Criar Molde</span>
+          </Link>
+        </div>
+      </header>
+
       {/* ── Public Gallery Hero ── */}
-      <div className="bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 border-b border-zinc-800/80 px-4 py-12 sm:py-16 text-center relative overflow-hidden">
+      <div className="bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 border-b border-zinc-800/80 px-4 py-10 sm:py-14 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none" />
 
-        <div className="max-w-4xl mx-auto space-y-4 relative z-10">
+        <div className="max-w-4xl mx-auto space-y-3.5 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 text-xs font-bold border border-amber-400/25">
             <Globe className="w-3.5 h-3.5" />
             <span>Galeria Pública da Comunidade</span>

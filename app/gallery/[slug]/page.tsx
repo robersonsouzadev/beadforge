@@ -110,23 +110,43 @@ export default function GalleryPatternPage({ params }: PatternPageProps) {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between select-none">
       {/* ── Top Bar ── */}
-      <header className="border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur px-4 py-3.5 sticky top-0 z-30">
+      <header className="border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl px-4 sm:px-6 py-3.5 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link
-            href="/gallery"
-            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition font-semibold"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Voltar para a Galeria</span>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition">
+                <Sparkles className="w-3.5 h-3.5 text-zinc-950 font-bold" />
+              </div>
+              <span className="text-sm font-black tracking-tight text-white hidden sm:inline">
+                Bead<span className="text-amber-400">Forge</span>
+              </span>
+            </Link>
+
+            <span className="text-zinc-700 hidden sm:inline">|</span>
+
+            <Link
+              href="/gallery"
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition font-semibold"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Galeria de Moldes</span>
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              href="/editor"
+              className="text-xs font-semibold text-zinc-400 hover:text-white transition px-2.5 py-1"
+            >
+              Editor 2D
+            </Link>
+
             <button
               onClick={handleShare}
-              className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700 shadow-sm"
+              className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700 shadow-sm"
             >
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Link Copiado!' : 'Compartilhar'}</span>
+              <span>{copiedLink ? 'Copiado!' : 'Compartilhar'}</span>
             </button>
           </div>
         </div>
