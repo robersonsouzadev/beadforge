@@ -35,14 +35,14 @@ describe('PDF & BOM Export Engine', () => {
     expect(bom.items.length).toBeGreaterThan(0);
   });
 
-  it('gera stream de documento PDF vetorial sem erros', async () => {
+  it('gera PDF com marca d\'água discreta para exportação do plano gratuito', async () => {
     const summary = buildBeadSummary(grid);
     const doc = generateBeadPDF(grid, summary, {
-      title: 'Teste de Exportação',
+      title: 'Molde Gratuito',
       pageSize: 'A4',
       orientation: 'portrait',
-      showCodes: true,
-      showSummary: true,
+      isPro: false,
+      watermark: true,
     });
 
     const chunks: Buffer[] = [];
@@ -54,7 +54,14 @@ describe('PDF & BOM Export Engine', () => {
     });
 
     expect(buffer.length).toBeGreaterThan(1000);
-    // PDF Magic bytes: %PDF
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+  });
+
+  it('permite exportação de PDF e CSV no plano gratuito em subscriptions config', async () => {
+    const { SUBSCRIPTION_PLANS } = await import('../../config/subscriptions');
+    expect(SUBSCRIPTION_PLANS.free.limits.exportFormats).toContain('pdf');
+    expect(SUBSCRIPTION_PLANS.free.limits.exportFormats).toContain('csv');
+    expect(SUBSCRIPTION_PLANS.free.limits.exportFormats).toContain('png');
+    expect(SUBSCRIPTION_PLANS.free.limits.maxDimension).toBeGreaterThanOrEqual(200);
   });
 });

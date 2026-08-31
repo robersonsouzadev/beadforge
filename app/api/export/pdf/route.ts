@@ -14,22 +14,10 @@ export async function POST(req: NextRequest) {
       headers: await headers(),
     });
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Você precisa estar autenticado para exportar PDF.' },
-        { status: 401 }
-      );
-    }
-
-    const sub = await getUserSubscription(session.user.id);
-    if (!sub.isPro) {
-      return NextResponse.json(
-        {
-          error:
-            'A exportação vetorial em PDF em alta escala é um recurso exclusivo do Plano Pro. Faça o upgrade para exportar.',
-        },
-        { status: 403 }
-      );
+    let isPro = false;
+    if (session?.user) {
+      const sub = await getUserSubscription(session.user.id);
+      isPro = !!sub.isPro;
     }
 
     const body = await req.json();
@@ -85,6 +73,8 @@ export async function POST(req: NextRequest) {
       showCodes: options?.showCodes ?? true,
       showSummary: options?.showSummary ?? true,
       cellSize: options?.cellSize,
+      isPro,
+      watermark: !isPro,
     });
 
     const chunks: Buffer[] = [];

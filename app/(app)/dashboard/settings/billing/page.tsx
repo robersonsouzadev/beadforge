@@ -19,7 +19,11 @@ export default async function BillingSettingsPage() {
     headers: await headers(),
   });
 
-  const sub = await getUserSubscription(session!.user.id);
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  const sub = await getUserSubscription(session.user.id);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">

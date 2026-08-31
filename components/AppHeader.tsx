@@ -33,6 +33,7 @@ interface AppHeaderProps {
     name: string;
     email: string;
     image?: string | null;
+    isGuest?: boolean;
   };
   isPro: boolean;
 }
@@ -78,6 +79,11 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
   };
 
   const handleSave = () => {
+    if (user.isGuest) {
+      router.push('/register?redirect=/editor');
+      return;
+    }
+
     if (systemMode === 'ultra' && !grid3D) return;
     if (systemMode === '2d' && !grid) return;
 
@@ -518,65 +524,82 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
           </div>
         )}
 
-        {/* User Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-zinc-800 text-zinc-300 transition focus:outline-none"
-          >
-            {user.image ? (
-              <img
-                src={user.image}
-                alt={user.name}
-                className="w-6 h-6 rounded-md object-cover ring-1 ring-zinc-700"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-bold text-amber-400">
-                {user.name?.charAt(0).toUpperCase() || 'U'}
+        {/* User Dropdown or Guest Auth CTA */}
+        {user.isGuest ? (
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Link
+              href="/login?redirect=/editor"
+              className="px-2.5 py-1 text-xs font-semibold text-zinc-300 hover:text-white transition"
+            >
+              Entrar
+            </Link>
+            <Link
+              href="/register?redirect=/editor"
+              className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-bold rounded-lg shadow transition"
+            >
+              Criar Conta
+            </Link>
+          </div>
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-zinc-800 text-zinc-300 transition focus:outline-none"
+            >
+              {user.image ? (
+                <img
+                  src={user.image}
+                  alt={user.name}
+                  className="w-6 h-6 rounded-md object-cover ring-1 ring-zinc-700"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-md bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-bold text-amber-400">
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+              <ChevronDown className="w-3 h-3 text-zinc-400" />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1.5 z-50 text-xs font-medium">
+                <div className="px-3.5 py-2 border-b border-zinc-800/80">
+                  <p className="text-white font-semibold truncate">{user.name}</p>
+                  <p className="text-zinc-400 text-[11px] truncate">{user.email}</p>
+                </div>
+
+                <Link
+                  href="/dashboard/settings/billing"
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-zinc-300 hover:text-white transition"
+                >
+                  <CreditCard className="w-4 h-4 text-amber-400" />
+                  <span>Assinatura & Faturamento</span>
+                </Link>
+
+                {user.email?.toLowerCase().includes('robersonsouza@outlook.com') && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 font-semibold transition"
+                  >
+                    <Sparkles className="w-4 h-4 text-rose-400" />
+                    <span>Painel do Administrador</span>
+                  </Link>
+                )}
+
+                <div className="border-t border-zinc-800/80 my-1" />
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sair da conta</span>
+                </button>
               </div>
             )}
-            <ChevronDown className="w-3 h-3 text-zinc-400" />
-          </button>
-
-          {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1.5 z-50 text-xs font-medium">
-              <div className="px-3.5 py-2 border-b border-zinc-800/80">
-                <p className="text-white font-semibold truncate">{user.name}</p>
-                <p className="text-zinc-400 text-[11px] truncate">{user.email}</p>
-              </div>
-
-              <Link
-                href="/dashboard/settings/billing"
-                onClick={() => setShowUserMenu(false)}
-                className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-zinc-300 hover:text-white transition"
-              >
-                <CreditCard className="w-4 h-4 text-amber-400" />
-                <span>Assinatura & Faturamento</span>
-              </Link>
-
-              {user.email?.toLowerCase().includes('robersonsouza@outlook.com') && (
-                <Link
-                  href="/admin"
-                  onClick={() => setShowUserMenu(false)}
-                  className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 font-semibold transition"
-                >
-                  <Sparkles className="w-4 h-4 text-rose-400" />
-                  <span>Painel do Administrador</span>
-                </Link>
-              )}
-
-              <div className="border-t border-zinc-800/80 my-1" />
-
-              <button
-                onClick={handleLogout}
-                className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-rose-400 hover:text-rose-300 transition"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sair da conta</span>
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

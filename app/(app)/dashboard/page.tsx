@@ -21,7 +21,11 @@ export default async function DashboardPage() {
     headers: await headers(),
   });
 
-  const sub = await getUserSubscription(session!.user.id);
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  const sub = await getUserSubscription(session.user.id);
   const projects = await getUserProjects();
 
   const maxProjects = sub.plan.limits.maxProjects;

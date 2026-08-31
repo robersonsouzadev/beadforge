@@ -12,6 +12,8 @@ export interface PDFOptions {
   showSummary?: boolean;
   title?: string;
   pegboardSize?: number; // 29 por padrão
+  watermark?: boolean;
+  isPro?: boolean;
 }
 
 const GRID_LINE_COLOR = '#CCCCCC';
@@ -269,6 +271,17 @@ export function generateBeadPDF(
 
           curX += swatchSlotW;
         }
+      }
+
+      // Marca d'água discreta de paridade para plano gratuito
+      const isWatermarkActive = options.watermark || options.isPro === false;
+      if (isWatermarkActive) {
+        doc.fontSize(6.5).fillColor('#999999').text(
+          'Criado gratuitamente com BeadForge Studio • app.hamabeadsbrasil.com.br',
+          margin,
+          pageH + margin - 8,
+          { width: pageW, align: 'center' }
+        );
       }
     }
   }

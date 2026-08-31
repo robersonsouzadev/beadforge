@@ -14,22 +14,28 @@ export default async function AppLayout({
     headers: await headers(),
   });
 
-  if (!session?.user) {
-    redirect('/login');
-  }
+  const isGuest = !session?.user;
+  const isPro = session?.user
+    ? (await getUserSubscription(session.user.id)).isPro
+    : false;
 
-  const sub = await getUserSubscription(session.user.id);
+  const userData = session?.user
+    ? {
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+        isGuest: false,
+      }
+    : {
+        name: 'Visitante',
+        email: '',
+        image: null,
+        isGuest: true,
+      };
 
   return (
     <div className="h-screen max-h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 flex flex-col selection:bg-amber-400/30 selection:text-amber-200">
-      <AppHeader
-        user={{
-          name: session.user.name,
-          email: session.user.email,
-          image: session.user.image,
-        }}
-        isPro={sub.isPro}
-      />
+      <AppHeader user={userData} isPro={isPro} />
       <main className="flex-1 flex flex-col h-[calc(100vh-48px)] overflow-hidden w-full max-w-full">{children}</main>
     </div>
   );

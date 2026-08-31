@@ -56,18 +56,26 @@ export default function MarketingLayout({
 
       {/* Footer */}
       <footer className="border-t border-zinc-900 bg-zinc-950 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-zinc-950" />
+        <div className="max-w-7xl mx-auto flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-zinc-950" />
+              </div>
+              <span className="text-sm font-bold text-white">
+                BeadForge Studio
+              </span>
             </div>
-            <span className="text-sm font-bold text-white">
-              BeadForge Studio
-            </span>
+            <p className="text-xs text-zinc-400 text-center sm:text-right">
+              &copy; {new Date().getFullYear()} BeadForge Studio &bull; O sistema de produção para arte em Beads.
+            </p>
           </div>
-          <p className="text-xs text-zinc-500 text-center sm:text-right">
-            &copy; {new Date().getFullYear()} BeadForge Studio &bull; A plataforma definitiva para arte em Fuse Beads.
-          </p>
+
+          <div className="border-t border-zinc-900 pt-6">
+            <p className="text-[11px] text-zinc-600 text-center leading-relaxed max-w-4xl mx-auto">
+              <strong>Aviso Legal de Compatibilidade:</strong> BeadForge Studio é uma ferramenta independente. &quot;Hama&quot;, &quot;Perler&quot;, &quot;Artkal&quot;, &quot;Pindoo&quot; e &quot;Nabbi&quot; são marcas registradas de seus respectivos proprietários, citadas neste aplicativo exclusivamente para fins de compatibilidade, mapeamento de paletas e indicação de insumos. BeadForge não possui afiliação oficial com estas marcas.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

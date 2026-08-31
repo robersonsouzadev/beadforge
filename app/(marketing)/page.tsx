@@ -23,7 +23,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold uppercase tracking-wider mb-8 shadow-inner">
             <Sparkles className="w-3.5 h-3.5" />
-            Nova Geração: 2D Classic + Ultra 3D Voxel
+            O Sistema de Produção para Arte em Beads
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.1]">
@@ -34,16 +34,15 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-6 text-base sm:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed">
-            O BeadForge Studio combina algoritmos avançados de calibração de cor CIEDE2000,
-            conversão 2D e fatiamento 3D voxel com exportação vetorial pronta para impressão.
+            Gere moldes com as cores reais da sua gaveta (Hama, Artkal, Pindoo), exporte PDFs vetoriais 1:1 com gabarito de montagem e calcule sua lista de materiais em segundos.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/register"
+              href="/editor"
               className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-base font-bold rounded-2xl shadow-xl shadow-amber-500/25 transition duration-200 transform hover:scale-[1.03]"
             >
-              <span>Criar Conta Gratuita</span>
+              <span>Criar Molde Grátis (Sem Cadastro)</span>
               <ArrowRight className="w-5 h-5" />
             </Link>
 
@@ -51,22 +50,22 @@ export default function LandingPage() {
               href="/pricing"
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white text-base font-semibold rounded-2xl transition duration-200"
             >
-              <span>Ver Planos & Pro</span>
+              <span>Ver Planos & Preços</span>
             </Link>
           </div>
 
           <div className="mt-12 flex items-center justify-center gap-6 text-xs text-zinc-400 font-medium">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>Sem cartão para começar</span>
+              <span>Sem cadastro para criar</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>Paletas oficiais brasileiras</span>
+              <span>PDF 1:1 e Lista CSV inclusos</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>Pagamento via PIX ou Cartão</span>
+              <span>Paletas Hama, Artkal e Pindoo</span>
             </div>
           </div>
         </div>
@@ -76,10 +75,10 @@ export default function LandingPage() {
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Tudo o que você precisa para criar sem limites
+            Tudo o que você precisa para produzir com perfeição
           </h2>
           <p className="mt-4 text-zinc-400 text-sm sm:text-base">
-            Desenvolvido especificamente para artesãos, hobbistas e profissionais de Fuse Beads.
+            Desenvolvido para artesãos, hobbistas e ateliês profissionais de Fuse Beads.
           </p>
         </div>
 
@@ -91,10 +90,10 @@ export default function LandingPage() {
                 <Palette className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">
-                Correspondência Perfeita de Cor
+                Cores Reais da sua Gaveta
               </h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Algoritmo CIEDE2000 de última geração com dithering Floyd-Steinberg e Atkinson em espaço linear RGB para transições naturais.
+                Mapeamento visual exato para paletas Hama, Artkal e Pindoo (Mini 2,6mm e Midi 5,0mm) com dithering suave para transições naturais.
               </p>
             </div>
           </div>
@@ -103,13 +102,13 @@ export default function LandingPage() {
           <div className="p-8 rounded-3xl bg-zinc-900/60 border border-zinc-800/80 hover:border-amber-500/40 transition duration-300 flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-6">
-                <Box className="w-6 h-6" />
+                <FileDown className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">
-                Ultra 3D Voxel Studio
+                PDF Vetorial 1:1 com Gabarito
               </h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Importe arquivos .VOX, .STL, .3MF, .OBJ e .GLB. Fatie esculturas tridimensionais em camadas com guia passo a passo de montagem.
+                Gere PDFs em escala real para colocar embaixo da sua pegboard transparente. Inclui numeração de linhas, réguas e legenda de códigos.
               </p>
             </div>
           </div>
@@ -118,13 +117,13 @@ export default function LandingPage() {
           <div className="p-8 rounded-3xl bg-zinc-900/60 border border-zinc-800/80 hover:border-amber-500/40 transition duration-300 flex flex-col justify-between">
             <div>
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-6">
-                <FileDown className="w-6 h-6" />
+                <Box className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">
-                Exportação PDF Vetorial
+                Lista de Materiais & Modo Ultra 3D
               </h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                Gere PDFs em escala 1:1 divididos por placas, com numeração de linhas, réguas e tabela completa de cores e códigos.
+                Saiba a contagem exata de pacotes para comprar sem sobras. Escale para a terceira dimensão com fatiamento de modelos 3D em camadas.
               </p>
             </div>
           </div>
