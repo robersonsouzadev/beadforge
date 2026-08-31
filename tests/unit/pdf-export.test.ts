@@ -89,4 +89,39 @@ describe('PDF & BOM Export Engine', () => {
     expect(buffer.length).toBeGreaterThan(1000);
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
   });
+
+  it('gera Guia de Montagem 3D Camada por Camada em PDF com capa e blueprints', async () => {
+    const { generate3DAssemblyPDF } = await import('../../core/export/pdf-generator');
+    const engine = new VoxelEngine(palette);
+    const voxelGrid = engine.buildFromRawVoxels(
+      [
+        { x: 0, y: 0, z: 0, rgb: { r: 255, g: 0, b: 0 } },
+        { x: 1, y: 1, z: 0, rgb: { r: 0, g: 255, b: 0 } },
+        { x: 0, y: 1, z: 1, rgb: { r: 0, g: 0, b: 255 } },
+      ],
+      10,
+      10,
+      2
+    );
+
+    const doc = generate3DAssemblyPDF(voxelGrid, {
+      title: 'Guia de Montagem 3D Teste',
+      pageSize: 'A4',
+      orientation: 'portrait',
+      showCodes: true,
+      isPro: true,
+      studioName: 'Ateliê 3D Beads',
+    });
+
+    const chunks: Buffer[] = [];
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+      doc.end();
+    });
+
+    expect(buffer.length).toBeGreaterThan(1500);
+    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+  });
 });

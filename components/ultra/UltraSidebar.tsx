@@ -21,6 +21,7 @@ import {
   FileCode,
   Flame,
   Star,
+  Loader2,
 } from 'lucide-react';
 
 interface UltraSidebarProps {
@@ -57,6 +58,41 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
   const [targetDepth, setTargetDepth] = useState<number>(20);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExport3DPDF = async () => {
+    if (!grid3D) return;
+    setIsExportingPDF(true);
+    try {
+      const res = await fetch('/api/export/pdf-3d', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grid3D,
+          title: `Guia de Montagem 3D — ${model3DFileName || 'Escultura 3D'}`,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao gerar PDF.');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `guia-montagem-3d-camadas.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Erro: ' + err.message);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
 
   // Paletas disponíveis formatadas para o CustomSelect
   const paletteGroups: SelectGroup[] = [
@@ -423,6 +459,20 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
                 <span className="font-bold text-amber-400">{bom.items.length} cores</span>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleExport3DPDF}
+              disabled={isExportingPDF}
+              className="w-full mt-2 py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-md disabled:opacity-50"
+            >
+              {isExportingPDF ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5" />
+              )}
+              <span>Baixar Guia de Montagem 3D (PDF)</span>
+            </button>
           </div>
         )}
       </div>

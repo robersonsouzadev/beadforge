@@ -15,6 +15,8 @@ import {
   LayoutGrid,
   Eye,
   EyeOff,
+  FileDown,
+  Loader2,
 } from 'lucide-react';
 
 export function AssemblyGuide() {
@@ -26,10 +28,46 @@ export function AssemblyGuide() {
     setIsAssemblyGuideOpen,
     highlightBeadCode,
     setHighlightBeadCode,
+    model3DFileName,
   } = useEditorStore();
 
   const [completedSteps, setCompletedSteps] = useState<{ [key: string]: boolean }>({});
   const [guideViewMode, setGuideViewMode] = useState<'pattern' | 'assembly'>('pattern');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExport3DPDF = async () => {
+    if (!grid3D) return;
+    setIsExportingPDF(true);
+    try {
+      const res = await fetch('/api/export/pdf-3d', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grid3D,
+          title: `Guia de Montagem 3D — ${model3DFileName || 'Escultura 3D'}`,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao gerar PDF.');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `guia-montagem-3d-camadas.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Erro: ' + err.message);
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
 
   if (!isAssemblyGuideOpen || !grid3D) return null;
 
@@ -112,6 +150,20 @@ export function AssemblyGuide() {
                 <span>Pixel Art</span>
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={handleExport3DPDF}
+              disabled={isExportingPDF}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs transition shadow-sm disabled:opacity-50"
+            >
+              {isExportingPDF ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">Baixar PDF 3D</span>
+            </button>
 
             <button
               onClick={() => {
