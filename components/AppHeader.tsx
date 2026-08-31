@@ -29,6 +29,7 @@ import {
   Boxes,
   ClipboardList,
   Users,
+  Globe,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -341,6 +342,7 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
   const navLinks = [
     { href: '/dashboard', label: 'Meus Projetos', icon: FolderKanban },
     { href: '/editor', label: 'Editor 2D', icon: LayoutGrid },
+    { href: '/gallery', label: 'Galeria', icon: Globe },
     { href: '/inventory', label: 'Estoque', icon: Boxes },
     { href: '/orders', label: 'Pedidos', icon: ClipboardList },
     { href: '/clients', label: 'Clientes', icon: Users },

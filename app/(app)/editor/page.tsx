@@ -14,11 +14,13 @@ import { PaletteMatcher } from '@/core/color/palette-matcher';
 import { applyDithering } from '@/core/color/dithering';
 import { buildGridMatrix } from '@/core/grid/grid-builder';
 import { getProjectById, saveProjectAction } from '@/app/actions/projects';
+import { getPatternBySlugAction } from '@/app/actions/gallery';
 import { Save, Loader2, CheckCircle2 } from 'lucide-react';
 
 function Editor2DContent() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get('project');
+  const remixSlug = searchParams.get('remix');
 
   const {
     currentProjectId,
@@ -48,8 +50,38 @@ function Editor2DContent() {
     setSystemMode('2d');
   }, [setSystemMode]);
 
-  // Load project if ID present in searchParams
+  // Load project or remix if present in searchParams
   useEffect(() => {
+    if (remixSlug) {
+      setCurrentProjectId(null);
+      getPatternBySlugAction(remixSlug)
+        .then((pat) => {
+          if (pat && pat.patternData) {
+            setProjectName(`Remix: ${pat.title}`);
+            const data = pat.patternData as any;
+            if (data?.grid) setGrid(data.grid);
+            if (data?.paletteId) setPaletteId(data.paletteId);
+            if (pat.thumbnailUrl) {
+              setImage(null as any, pat.thumbnailUrl, pat.thumbnailUrl);
+            }
+            if (data?.selectedPegboardTemplateId) {
+              setPegboardTemplate(data.selectedPegboardTemplateId);
+            }
+            if (data?.boardsHorizontal && data?.boardsVertical) {
+              setBoardsMultipliers(data.boardsHorizontal, data.boardsVertical);
+            }
+            if (data?.ditherMode) {
+              setDitherMode(data.ditherMode);
+            }
+            if (data?.contrast !== undefined || data?.saturation !== undefined || data?.brightness !== undefined) {
+              setAdjustments(data.contrast || 0, data.saturation || 0, data.brightness || 0);
+            }
+          }
+        })
+        .catch(console.error);
+      return;
+    }
+
     if (!projectId) {
       setCurrentProjectId(null);
       return;
@@ -87,6 +119,7 @@ function Editor2DContent() {
       });
   }, [
     projectId,
+    remixSlug,
     setGrid,
     setProjectName,
     setPaletteId,
@@ -100,7 +133,7 @@ function Editor2DContent() {
 
   // Default demo grid initialization
   useEffect(() => {
-    if (grid || projectId) return;
+    if (grid || projectId || remixSlug) return;
 
     setProjectName('Novo Molde 2D');
 

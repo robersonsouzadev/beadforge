@@ -192,6 +192,51 @@ export const approval = pgTable('approval', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// ── Organic Acquisition & SEO (Phase 3) ──
+
+export const galleryPattern = pgTable('gallery_pattern', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  projectId: text('project_id').references(() => project.id, { onDelete: 'set null' }),
+  slug: text('slug').notNull().unique(), // URL amigável SEO
+  title: text('title').notNull(),
+  description: text('description'),
+  category: text('category').notNull().default('geek'), // 'games' | 'anime' | 'geek' | 'cartoons' | 'decor' | 'animals' | 'other'
+  thumbnailUrl: text('thumbnail_url'),
+  patternData: jsonb('pattern_data').notNull(), // grid, summary, palette
+  beadCount: integer('bead_count').notNull().default(0),
+  colorCount: integer('color_count').notNull().default(0),
+  paletteName: text('palette_name'),
+  dimensions: text('dimensions').default('29x29'),
+  likesCount: integer('likes_count').notNull().default(0),
+  remixCount: integer('remix_count').notNull().default(0),
+  isPublished: boolean('is_published').notNull().default(true),
+  isValidated3D: boolean('is_validated_3d').notNull().default(false),
+  publishedAt: timestamp('published_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const creatorProfile = pgTable('creator_profile', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  handle: text('handle').notNull().unique(), // ex: "ateliegeek"
+  displayName: text('display_name').notNull(),
+  bio: text('bio'),
+  avatarUrl: text('avatar_url'),
+  shopUrl: text('shop_url'), // Shopee / Elo7 / ML
+  instagramHandle: text('instagram_handle'),
+  whatsappNumber: text('whatsapp_number'),
+  isPublic: boolean('is_public').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Subscription = typeof subscription.$inferSelect;
@@ -208,3 +253,8 @@ export type Order = typeof order.$inferSelect;
 export type NewOrder = typeof order.$inferInsert;
 export type Approval = typeof approval.$inferSelect;
 export type NewApproval = typeof approval.$inferInsert;
+export type GalleryPattern = typeof galleryPattern.$inferSelect;
+export type NewGalleryPattern = typeof galleryPattern.$inferInsert;
+export type CreatorProfile = typeof creatorProfile.$inferSelect;
+export type NewCreatorProfile = typeof creatorProfile.$inferInsert;
+
