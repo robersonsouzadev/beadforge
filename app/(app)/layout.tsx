@@ -14,10 +14,15 @@ export default async function AppLayout({
     headers: await headers(),
   });
 
+  const sub = session?.user
+    ? await getUserSubscription(session.user.id)
+    : null;
+
   const isGuest = !session?.user;
-  const isPro = session?.user
-    ? (await getUserSubscription(session.user.id)).isPro
-    : false;
+  const isPro = sub?.isPro ?? false;
+  const isStudio = sub?.isStudio ?? false;
+  const isTrial = sub?.isTrial ?? false;
+  const trialDaysRemaining = sub?.trialDaysRemaining ?? 0;
 
   const userData = session?.user
     ? {
@@ -35,7 +40,13 @@ export default async function AppLayout({
 
   return (
     <div className="h-screen max-h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 flex flex-col selection:bg-amber-400/30 selection:text-amber-200">
-      <AppHeader user={userData} isPro={isPro} />
+      <AppHeader
+        user={userData}
+        isPro={isPro}
+        isStudio={isStudio}
+        isTrial={isTrial}
+        trialDaysRemaining={trialDaysRemaining}
+      />
       <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full custom-scrollbar">
         {children}
       </main>

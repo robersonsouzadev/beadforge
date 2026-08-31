@@ -41,9 +41,18 @@ interface AppHeaderProps {
     isGuest?: boolean;
   };
   isPro: boolean;
+  isStudio?: boolean;
+  isTrial?: boolean;
+  trialDaysRemaining?: number;
 }
 
-export function AppHeader({ user, isPro }: AppHeaderProps) {
+export function AppHeader({
+  user,
+  isPro,
+  isStudio = false,
+  isTrial = false,
+  trialDaysRemaining = 0,
+}: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -525,13 +534,27 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
           </div>
         )}
 
-        {/* Member Pro Badge */}
-        {isPro && (
+        {/* Member Pro / Studio / Trial Badge */}
+        {isTrial ? (
+          <Link
+            href="/pricing"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black tracking-wider uppercase hover:border-amber-400 transition"
+            title="Degustação VIP de Boas-Vindas Ativa! Clique para garantir acesso definitivo"
+          >
+            <Zap className="w-3 h-3 text-amber-400 fill-amber-400 animate-pulse" />
+            <span>VIP: {trialDaysRemaining}d restantes</span>
+          </Link>
+        ) : isStudio ? (
+          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/35 text-amber-300 text-[10px] font-extrabold tracking-wider uppercase">
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            <span>STUDIO</span>
+          </div>
+        ) : isPro ? (
           <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-extrabold tracking-wider uppercase">
             <Sparkles className="w-3 h-3 text-amber-400" />
             <span>PRO</span>
           </div>
-        )}
+        ) : null}
 
         {/* Language Switcher */}
         <LanguageSwitcher />
@@ -578,6 +601,29 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
                   <p className="text-white font-semibold truncate">{user.name}</p>
                   <p className="text-zinc-400 text-[11px] truncate">{user.email}</p>
                 </div>
+
+                {/* Banner de Trial Ativo no Dropdown */}
+                {isTrial && (
+                  <div className="mx-2 my-2 p-2.5 rounded-xl bg-gradient-to-br from-amber-950/40 to-zinc-950 border border-amber-500/30 text-[11px] text-amber-300">
+                    <div className="flex items-center justify-between font-black text-amber-400 mb-1">
+                      <span className="flex items-center gap-1">
+                        <Zap className="w-3 h-3 fill-amber-400" />
+                        <span>Passe VIP Ativo</span>
+                      </span>
+                      <span>{trialDaysRemaining}d restantes</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-400 mb-2 leading-tight">
+                      Aproveite o Ultra 3D e exportações sem limites de boas-vindas!
+                    </p>
+                    <Link
+                      href="/pricing"
+                      onClick={() => setShowUserMenu(false)}
+                      className="block text-center py-1 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold rounded-lg transition text-[11px] shadow"
+                    >
+                      Garantir Assinatura
+                    </Link>
+                  </div>
+                )}
 
                 <Link
                   href="/dashboard/settings/profile"
