@@ -50,6 +50,8 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     priceId === 'studio' ||
     priceId === 'price_1uazosrsgtnu3z0k2vux8dxb' ||
     priceId === 'price_1uazpcrsgtnu3z0kc2dwwwqo' ||
+    priceId === 'price_1uaa2mrsgtnu3z0kkmgegbli' ||
+    priceId === 'price_1uaa4crsgtnu3z0kqzypce4m' ||
     (Boolean(studioMonthly) && priceId === studioMonthly) ||
     (Boolean(studioYearly) && priceId === studioYearly)
   );

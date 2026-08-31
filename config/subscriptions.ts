@@ -10,25 +10,26 @@ export interface PlanLimits {
   maxDimension: number; // Max pegboard width/height in beads
 }
 
+export interface PriceDetails {
+  amount: number;
+  priceId: string;
+  displayPrice: string;
+  period: string;
+  savingsBadge?: string;
+}
+
 export interface Plan {
   id: 'free' | 'pro' | 'studio';
   name: string;
   badge?: string;
   description: string;
   prices: {
-    monthly: {
-      amount: number;
-      priceId: string;
-      displayPrice: string;
-      period: string;
-    };
-    yearly: {
-      amount: number;
-      priceId: string;
-      displayPrice: string;
-      period: string;
-      savingsBadge?: string;
-    };
+    monthly: PriceDetails;
+    yearly: PriceDetails;
+  };
+  pricesUSD: {
+    monthly: PriceDetails;
+    yearly: PriceDetails;
   };
   features: PlanFeature[];
   limits: PlanLimits;
@@ -51,6 +52,20 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
         priceId: '',
         displayPrice: 'R$ 0',
         period: '/ano',
+      },
+    },
+    pricesUSD: {
+      monthly: {
+        amount: 0,
+        priceId: '',
+        displayPrice: '$0',
+        period: '/mo',
+      },
+      yearly: {
+        amount: 0,
+        priceId: '',
+        displayPrice: '$0',
+        period: '/yr',
       },
     },
     limits: {
@@ -93,6 +108,21 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
         savingsBadge: 'Economize 17%',
       },
     },
+    pricesUSD: {
+      monthly: {
+        amount: 4.99,
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_USD || 'price_1UAa06RsgTNu3Z0KCFz2xoix',
+        displayPrice: '$4.99',
+        period: '/mo',
+      },
+      yearly: {
+        amount: 39.0,
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY_USD || 'price_1UAa13RsgTNu3Z0KLhZzVvFN',
+        displayPrice: '$3.25',
+        period: '/mo (billed $39/yr)',
+        savingsBadge: 'Save 35%',
+      },
+    },
     limits: {
       maxProjects: Infinity,
       exportFormats: ['png', 'pdf', 'csv'],
@@ -131,6 +161,21 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
         displayPrice: 'R$ 65,80',
         period: '/mês (faturado R$ 790/ano)',
         savingsBadge: 'Economize 17% (2 meses grátis)',
+      },
+    },
+    pricesUSD: {
+      monthly: {
+        amount: 14.99,
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_MONTHLY_USD || 'price_1UAa2MRsgTNu3Z0KkMgEGBlI',
+        displayPrice: '$14.99',
+        period: '/mo',
+      },
+      yearly: {
+        amount: 149.0,
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_YEARLY_USD || 'price_1UAa4CRsgTNu3Z0KQZYpCE4M',
+        displayPrice: '$12.40',
+        period: '/mo (billed $149/yr)',
+        savingsBadge: 'Save 17% (2 months free)',
       },
     },
     limits: {

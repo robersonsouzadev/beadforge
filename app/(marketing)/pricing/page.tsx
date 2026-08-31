@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   CreditCard,
   QrCode,
-  HelpCircle,
+  Globe2,
   Loader2,
   Crown,
   Boxes,
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function PricingPage() {
+  const [currency, setCurrency] = useState<'BRL' | 'USD'>('BRL');
   const [isYearly, setIsYearly] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -37,13 +38,17 @@ export default function PricingPage() {
   const proPlan = SUBSCRIPTION_PLANS.pro;
   const studioPlan = SUBSCRIPTION_PLANS.studio;
 
-  const currentProPrice = isYearly ? proPlan.prices.yearly : proPlan.prices.monthly;
-  const currentStudioPrice = isYearly ? studioPlan.prices.yearly : studioPlan.prices.monthly;
+  const proPrices = currency === 'USD' ? proPlan.pricesUSD : proPlan.prices;
+  const studioPrices = currency === 'USD' ? studioPlan.pricesUSD : studioPlan.prices;
+  const freePrices = currency === 'USD' ? freePlan.pricesUSD : freePlan.prices;
+
+  const currentProPrice = isYearly ? proPrices.yearly : proPrices.monthly;
+  const currentStudioPrice = isYearly ? studioPrices.yearly : studioPrices.monthly;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-20 select-none">
-      {/* ── Title & Toggle ── */}
-      <div className="text-center max-w-3xl mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-16 select-none">
+      {/* ── Title & Toggles ── */}
+      <div className="text-center max-w-3xl mx-auto space-y-5">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5" />
           Planos Transparentes & Sem Pegadinhas
@@ -57,40 +62,69 @@ export default function PricingPage() {
           Comece gratuitamente ou assine o plano <strong>Studio</strong> para ter controle total de estoque, orçamentos automáticos e aprovação de provas no WhatsApp.
         </p>
 
-        {/* Period Switcher */}
-        <div className="pt-4 flex items-center justify-center gap-4">
-          <span
-            className={`text-xs sm:text-sm font-semibold cursor-pointer transition ${
-              !isYearly ? 'text-white' : 'text-zinc-500'
-            }`}
-            onClick={() => setIsYearly(false)}
-          >
-            Mensal
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setIsYearly(!isYearly)}
-            className="relative w-12 h-7 bg-zinc-800 rounded-full p-1 border border-zinc-700 transition duration-200 focus:outline-none"
-          >
-            <div
-              className={`w-5 h-5 rounded-full bg-amber-400 shadow-md transform transition-transform duration-200 ${
-                isYearly ? 'translate-x-5' : 'translate-x-0'
+        {/* Currency & Period Switchers */}
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+          {/* Currency Switcher (BRL vs USD) */}
+          <div className="flex items-center bg-zinc-900 border border-zinc-800 p-1 rounded-2xl text-xs font-bold shadow-inner">
+            <button
+              type="button"
+              onClick={() => setCurrency('BRL')}
+              className={`px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                currency === 'BRL'
+                  ? 'bg-amber-400 text-zinc-950 shadow-md'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
-            />
-          </button>
+            >
+              <span>🇧🇷 Real (R$)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrency('USD')}
+              className={`px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                currency === 'USD'
+                  ? 'bg-amber-400 text-zinc-950 shadow-md'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <span>🇺🇸 Dólar (USD $)</span>
+            </button>
+          </div>
 
-          <span
-            className={`text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer transition ${
-              isYearly ? 'text-white' : 'text-zinc-500'
-            }`}
-            onClick={() => setIsYearly(true)}
-          >
-            <span>Anual</span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-[11px] font-bold border border-emerald-500/30">
-              Economize 17% (2 meses grátis)
+          {/* Period Switcher (Monthly vs Yearly) */}
+          <div className="flex items-center gap-3">
+            <span
+              className={`text-xs sm:text-sm font-semibold cursor-pointer transition ${
+                !isYearly ? 'text-white' : 'text-zinc-500'
+              }`}
+              onClick={() => setIsYearly(false)}
+            >
+              Mensal
             </span>
-          </span>
+
+            <button
+              type="button"
+              onClick={() => setIsYearly(!isYearly)}
+              className="relative w-12 h-7 bg-zinc-800 rounded-full p-1 border border-zinc-700 transition duration-200 focus:outline-none"
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-amber-400 shadow-md transform transition-transform duration-200 ${
+                  isYearly ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+
+            <span
+              className={`text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-pointer transition ${
+                isYearly ? 'text-white' : 'text-zinc-500'
+              }`}
+              onClick={() => setIsYearly(true)}
+            >
+              <span>Anual</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] sm:text-[11px] font-bold border border-emerald-500/30">
+                Economize até 35%
+              </span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -105,8 +139,12 @@ export default function PricingPage() {
             </div>
 
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl sm:text-4xl font-black text-white">R$ 0</span>
-              <span className="text-xs text-zinc-500">/mês</span>
+              <span className="text-3xl sm:text-4xl font-black text-white">
+                {currency === 'USD' ? '$0' : 'R$ 0'}
+              </span>
+              <span className="text-xs text-zinc-500">
+                {currency === 'USD' ? '/mo' : '/mês'}
+              </span>
             </div>
 
             <div className="border-t border-zinc-800 pt-6 space-y-3">
@@ -161,8 +199,8 @@ export default function PricingPage() {
                 <span className="text-xs text-zinc-500">{currentProPrice.period}</span>
               </div>
               {isYearly && (
-                <span className="text-[10px] text-emerald-400 block mt-1">
-                  {proPlan.prices.yearly.savingsBadge}
+                <span className="text-[10px] text-emerald-400 block mt-1 font-semibold">
+                  {proPrices.yearly.savingsBadge}
                 </span>
               )}
             </div>
@@ -221,7 +259,7 @@ export default function PricingPage() {
               </div>
               {isYearly && (
                 <span className="text-[10px] text-emerald-400 block mt-1 font-semibold">
-                  {studioPlan.prices.yearly.savingsBadge}
+                  {studioPrices.yearly.savingsBadge}
                 </span>
               )}
             </div>
@@ -263,10 +301,10 @@ export default function PricingPage() {
       {/* ── Payment Methods & Guarantee Badges ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-zinc-800/80 text-xs">
         <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-3">
-          <QrCode className="w-5 h-5 text-emerald-400 shrink-0" />
+          <Globe2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <div>
-            <span className="font-bold text-white block">Pagamento via PIX ou Cartão</span>
-            <span className="text-zinc-500 text-[11px]">Liberação imediata da sua conta</span>
+            <span className="font-bold text-white block">Pagamento Global (PIX, Cartão & Carteiras)</span>
+            <span className="text-zinc-500 text-[11px]">Aceito no Brasil e em mais de 135 países</span>
           </div>
         </div>
 
