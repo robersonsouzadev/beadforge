@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { project } from '@/db/schema';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { getUserSubscription } from '@/lib/subscription';
+import { generateThumbnailFromGrid, generateThumbnailFromGrid3D } from '@/lib/thumbnail';
 
 export async function getUserProjects() {
   const session = await auth.api.getSession({
@@ -17,18 +18,44 @@ export async function getUserProjects() {
     return [];
   }
 
-  return await db
+  const projects = await db
     .select({
       id: project.id,
       name: project.name,
       mode: project.mode,
       thumbnail: project.thumbnail,
+      data: project.data,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
     })
     .from(project)
     .where(eq(project.userId, session.user.id))
     .orderBy(desc(project.updatedAt));
+
+  return projects.map((p) => {
+    let thumb = p.thumbnail;
+    if (!thumb && p.data) {
+      const data = p.data as any;
+      if (data.originalImage && typeof data.originalImage === 'string' && data.originalImage.startsWith('data:image')) {
+        thumb = data.originalImage;
+      } else if (data.imageBase64 && typeof data.imageBase64 === 'string' && data.imageBase64.startsWith('data:image')) {
+        thumb = data.imageBase64;
+      } else if (data.grid) {
+        thumb = generateThumbnailFromGrid(data.grid);
+      } else if (data.grid3D) {
+        thumb = generateThumbnailFromGrid3D(data.grid3D);
+      }
+    }
+
+    return {
+      id: p.id,
+      name: p.name,
+      mode: p.mode,
+      thumbnail: thumb || null,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    };
+  });
 }
 
 export async function getProjectById(projectId: string) {

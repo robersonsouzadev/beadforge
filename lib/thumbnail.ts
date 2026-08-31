@@ -2,7 +2,7 @@ import type { GridMatrix } from '@/core/schemas/grid';
 import type { VoxelGrid3D } from '@/core/voxel/voxel-types';
 
 /**
- * Resizes an image (base64 or blob URL) to a compact thumbnail data URL.
+ * Resizes an image (base64 or blob URL) to a compact thumbnail data URL in the browser.
  * Keeps file size small (~20-40KB) for fast dashboard loading.
  */
 export async function generateThumbnailFromImage(
@@ -10,12 +10,11 @@ export async function generateThumbnailFromImage(
   maxWidth = 400,
   maxHeight = 300
 ): Promise<string> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve(src);
-      return;
-    }
+  if (typeof window === 'undefined') {
+    return src;
+  }
 
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -37,10 +36,8 @@ export async function generateThumbnailFromImage(
         return;
       }
 
-      // Draw image onto canvas
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Export as JPEG with good quality
       try {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         resolve(dataUrl);
@@ -56,40 +53,73 @@ export async function generateThumbnailFromImage(
 }
 
 /**
- * Generates a thumbnail image directly from a 2D bead grid.
+ * Generates a clean, ultra-lightweight vector SVG thumbnail from a 2D bead grid.
+ * Works seamlessly in both Node.js (Server / SSR) and Browser environments.
  */
-export function generateThumbnailFromGrid(grid: GridMatrix, maxDim = 320): string {
-  if (typeof window === 'undefined') return '';
+export function generateThumbnailFromGrid(grid: GridMatrix): string {
   if (!grid || !grid.cells || grid.cells.length === 0) return '';
+  const { width, height, cells } = grid;
+  if (width <= 0 || height <= 0) return '';
 
-  const rows = grid.height;
-  const cols = grid.width;
-  if (rows === 0 || cols === 0) return '';
-
-  const cellSize = Math.max(2, Math.floor(maxDim / Math.max(rows, cols)));
-  const width = cols * cellSize;
-  const height = rows * cellSize;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
-
-  ctx.fillStyle = '#09090b';
-  ctx.fillRect(0, 0, width, height);
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const cell = grid.cells[r]?.[c];
+  let beadsSvg = '';
+  for (let r = 0; r < height; r++) {
+    const row = cells[r];
+    if (!row) continue;
+    for (let c = 0; c < width; c++) {
+      const cell = row[c];
       if (cell && !cell.isEmpty && cell.hex) {
-        ctx.fillStyle = cell.hex;
-        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        const x = (c + 0.06).toFixed(2);
+        const y = (r + 0.06).toFixed(2);
+        beadsSvg += `<rect x="${x}" y="${y}" width="0.88" height="0.88" rx="0.22" fill="${cell.hex}"/>`;
       }
     }
   }
 
-  return canvas.toDataURL('image/png');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges" style="background:#09090b">${beadsSvg}</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Generates an SVG thumbnail from a 3D layered sculpture (top-down composite).
+ */
+export function generateThumbnailFromGrid3D(grid3D: VoxelGrid3D): string {
+  if (!grid3D || !grid3D.layers || grid3D.layers.length === 0) return '';
+  const { width, height, layers } = grid3D;
+  if (width <= 0 || height <= 0) return '';
+
+  const composite: Array<Array<string | null>> = Array.from({ length: height }, () =>
+    Array.from({ length: width }, () => null)
+  );
+
+  for (let z = 0; z < layers.length; z++) {
+    const layer = layers[z];
+    if (!layer || !layer.grid || !layer.grid.cells) continue;
+    for (let r = 0; r < height; r++) {
+      const row = layer.grid.cells[r];
+      if (!row) continue;
+      for (let c = 0; c < width; c++) {
+        const cell = row[c];
+        if (cell && !cell.isEmpty && cell.hex) {
+          composite[r][c] = cell.hex;
+        }
+      }
+    }
+  }
+
+  let beadsSvg = '';
+  for (let r = 0; r < height; r++) {
+    for (let c = 0; c < width; c++) {
+      const hex = composite[r][c];
+      if (hex) {
+        const x = (c + 0.06).toFixed(2);
+        const y = (r + 0.06).toFixed(2);
+        beadsSvg += `<rect x="${x}" y="${y}" width="0.88" height="0.88" rx="0.22" fill="${hex}"/>`;
+      }
+    }
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges" style="background:#09090b">${beadsSvg}</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 /**
@@ -102,8 +132,13 @@ export async function createProjectThumbnail(options: {
   grid3D?: VoxelGrid3D | null;
   activeLayerZ?: number;
 }): Promise<string | undefined> {
-  // 1. If original uploaded image is present, use it as thumbnail
-  if (options.originalImage && typeof options.originalImage === 'string' && options.originalImage.trim().length > 0) {
+  // 1. If original uploaded image is present, resize and use it as thumbnail
+  if (
+    options.originalImage &&
+    typeof options.originalImage === 'string' &&
+    options.originalImage.trim().length > 0 &&
+    options.originalImage.startsWith('data:image')
+  ) {
     try {
       return await generateThumbnailFromImage(options.originalImage);
     } catch (err) {
@@ -112,21 +147,15 @@ export async function createProjectThumbnail(options: {
   }
 
   // 2. Fallback to 2D grid render if beads exist
-  if (options.grid && options.grid.totalBeads > 0) {
-    return generateThumbnailFromGrid(options.grid);
+  if (options.grid && options.grid.cells && options.grid.cells.length > 0) {
+    const thumb = generateThumbnailFromGrid(options.grid);
+    if (thumb) return thumb;
   }
 
   // 3. Fallback to 3D grid voxel layer
   if (options.grid3D && options.grid3D.layers?.length > 0) {
-    const layerIdx = options.activeLayerZ ?? 0;
-    const targetLayer =
-      options.grid3D.layers.find((l) => l.beadCount > 0) ||
-      options.grid3D.layers[layerIdx] ||
-      options.grid3D.layers[0];
-
-    if (targetLayer?.grid && targetLayer.grid.totalBeads > 0) {
-      return generateThumbnailFromGrid(targetLayer.grid);
-    }
+    const thumb3D = generateThumbnailFromGrid3D(options.grid3D);
+    if (thumb3D) return thumb3D;
   }
 
   return undefined;
