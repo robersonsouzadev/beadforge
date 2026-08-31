@@ -163,6 +163,101 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing Preview Section ── */}
+      <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold uppercase mb-3">
+            <Sparkles className="w-3.5 h-3.5" />
+            Planos Transparentes
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            Escolha o Plano Ideal para seu Momento
+          </h2>
+          <p className="mt-3 text-zinc-400 text-sm sm:text-base">
+            De entusiastas criando os primeiros moldes a ateliês profissionais com encomendas diárias.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+          {/* Free */}
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-white">Gratuito</h3>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-white">R$ 0</span>
+                <span className="text-xs text-zinc-500">/mês</span>
+              </div>
+              <p className="text-xs text-zinc-400">Para começar a desenhar e exportar seus primeiros moldes 2D.</p>
+              <ul className="space-y-2 text-xs text-zinc-300 pt-2 border-t border-zinc-800">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>Editor 2D sem login obrigatório</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>PDF 1:1 e CSV inclusos (com marca d&apos;água)</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>Paletas Hama, Artkal e Pindoo</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>Multi-placas até 4×4</span></li>
+              </ul>
+            </div>
+            <div className="pt-6">
+              <Link href="/editor" className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-750 text-white font-bold text-xs rounded-xl flex items-center justify-center transition border border-zinc-700">
+                Criar Molde Grátis
+              </Link>
+            </div>
+          </div>
+
+          {/* Creator Pro */}
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between hover:border-zinc-700 transition">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-white">Creator Pro</h3>
+                <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[10px] font-bold border border-zinc-700">Hobby Pro</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-white">R$ 19,90</span>
+                <span className="text-xs text-zinc-500">/mês</span>
+              </div>
+              <p className="text-xs text-zinc-400">Para criadores e hobbistas que querem PDFs limpos e projetos na nuvem.</p>
+              <ul className="space-y-2 text-xs text-zinc-300 pt-2 border-t border-zinc-800">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>PDFs 1:1 sem marca d&apos;água</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>Projetos ilimitados na nuvem</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>Assistente de Montagem Bead-a-Bead</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-amber-400" /> <span>Galeria Pública & Perfil de Criador</span></li>
+              </ul>
+            </div>
+            <div className="pt-6">
+              <Link href="/pricing" className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-750 text-amber-400 border border-amber-400/30 font-bold text-xs rounded-xl flex items-center justify-center transition">
+                Assinar Creator Pro
+              </Link>
+            </div>
+          </div>
+
+          {/* Studio Ateliê */}
+          <div className="bg-gradient-to-b from-amber-500/10 via-zinc-900 to-zinc-950 border-2 border-amber-500 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-white">Studio Ateliê</h3>
+                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-extrabold">Recomendado</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-amber-400">R$ 79,00</span>
+                <span className="text-xs text-zinc-400">/mês</span>
+              </div>
+              <p className="text-xs text-zinc-300">O sistema completo para quem vende e atende encomendas.</p>
+              <ul className="space-y-2 text-xs text-zinc-200 pt-2 border-t border-zinc-800">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> <span className="font-semibold">Estoque Físico Multi-Marca & Baixa</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> <span className="font-semibold">Calculadora de Custos com Taxas Shopee/ML</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> <span className="font-semibold">Pipeline de Pedidos & Provas WhatsApp</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> <span className="font-semibold">PDF White-Label com seu Ateliê</span></li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> <span className="font-semibold">Modo Ultra 3D Voxel Completo</span></li>
+              </ul>
+            </div>
+            <div className="pt-6">
+              <Link href="/pricing" className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition">
+                <span>Quero o Studio Completo</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Bottom CTA ── */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
