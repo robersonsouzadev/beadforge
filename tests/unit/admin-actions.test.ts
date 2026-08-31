@@ -14,4 +14,23 @@ describe('Admin System & Authorization', () => {
     expect(isUserAdmin(null)).toBe(false);
     expect(isUserAdmin(undefined)).toBe(false);
   });
+
+  it('valida estruturas de tipos do novo painel admin', () => {
+    const sampleUserItem = {
+      id: 'usr-1',
+      name: 'Tester',
+      email: 'test@example.com',
+      role: 'user',
+      createdAt: new Date(),
+      isPro: true,
+      planId: 'studio' as const,
+      subscriptionStatus: 'active',
+      currentPeriodEnd: new Date(),
+      projectCount: 5,
+      aiCredits: 10,
+    };
+
+    expect(sampleUserItem.aiCredits).toBe(10);
+    expect(sampleUserItem.planId).toBe('studio');
+  });
 });

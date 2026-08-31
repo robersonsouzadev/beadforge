@@ -9,6 +9,7 @@ export const user = pgTable('user', {
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
   role: text('role').notNull().default('user'),
+  aiCredits: integer('ai_credits').notNull().default(5),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -237,6 +238,25 @@ export const creatorProfile = pgTable('creator_profile', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const systemConfig = pgTable('system_config', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  description: text('description'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const aiGenerationLog = pgTable('ai_generation_log', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  provider: text('provider').notNull(), // 'tripo3d' | 'meshy' | 'replicate' | 'local_neural'
+  modelName: text('model_name').notNull(),
+  durationMs: integer('duration_ms').notNull().default(0),
+  estimatedCostUsd: numeric('estimated_cost_usd', { precision: 10, scale: 4 }).notNull().default('0.0000'),
+  status: text('status').notNull().default('completed'), // 'completed' | 'failed'
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Subscription = typeof subscription.$inferSelect;
@@ -257,4 +277,8 @@ export type GalleryPattern = typeof galleryPattern.$inferSelect;
 export type NewGalleryPattern = typeof galleryPattern.$inferInsert;
 export type CreatorProfile = typeof creatorProfile.$inferSelect;
 export type NewCreatorProfile = typeof creatorProfile.$inferInsert;
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type NewSystemConfig = typeof systemConfig.$inferInsert;
+export type AiGenerationLog = typeof aiGenerationLog.$inferSelect;
+export type NewAiGenerationLog = typeof aiGenerationLog.$inferInsert;
 

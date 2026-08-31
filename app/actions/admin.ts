@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { isUserAdmin } from '@/lib/admin';
 import { db } from '@/db';
-import { user, subscription, project, account } from '@/db/schema';
-import { count, eq, desc, and } from 'drizzle-orm';
+import { user, subscription, project, account, systemConfig, aiGenerationLog } from '@/db/schema';
+import { count, eq, desc, and, sql } from 'drizzle-orm';
 
 export interface AdminUserItem {
   id: string;
@@ -20,6 +20,40 @@ export interface AdminUserItem {
   subscriptionStatus: string;
   currentPeriodEnd: Date | null;
   projectCount: number;
+  aiCredits: number;
+}
+
+export interface AdminAiConfig {
+  activeProvider: 'tripo3d' | 'meshy' | 'replicate' | 'local_neural';
+  tripoApiKey: string;
+  meshyApiKey: string;
+  replicateToken: string;
+  defaultAiCredits: number;
+  costPerCreditBrl: number;
+}
+
+export interface AdminAiLogItem {
+  id: string;
+  userId?: string | null;
+  userName?: string;
+  userEmail?: string;
+  provider: string;
+  modelName: string;
+  durationMs: number;
+  estimatedCostUsd: number;
+  status: string;
+  errorMessage?: string | null;
+  createdAt: Date;
+}
+
+export interface AdminAiStats {
+  totalGenerations: number;
+  successGenerations: number;
+  failedGenerations: number;
+  totalCostUsd: number;
+  totalCostBrl: number;
+  totalCreditsCirculating: number;
+  recentLogs: AdminAiLogItem[];
 }
 
 export interface AdminStats {
@@ -60,6 +94,7 @@ export async function getAdminData(): Promise<AdminStats> {
       name: user.name,
       email: user.email,
       role: user.role,
+      aiCredits: user.aiCredits,
       createdAt: user.createdAt,
     })
     .from(user)
@@ -120,6 +155,7 @@ export async function getAdminData(): Promise<AdminStats> {
       subscriptionStatus: userSub?.status || 'none',
       currentPeriodEnd: userSub?.currentPeriodEnd || null,
       projectCount: projectCountMap.get(u.id) || 0,
+      aiCredits: u.aiCredits ?? 5,
     };
   });
 
@@ -388,4 +424,233 @@ async function applySubscriptionPlan(
       updatedAt: new Date(),
     });
   }
+}
+
+/**
+ * Retorna as configurações dinâmicas de IA do sistema
+ */
+export async function getSystemAiConfig(): Promise<AdminAiConfig> {
+  await checkAdminSession();
+
+  try {
+    const configs = await db.select().from(systemConfig);
+    const configMap = new Map(configs.map((c) => [c.key, c.value]));
+
+    return {
+      activeProvider: (configMap.get('ai_active_provider') as any) || 'local_neural',
+      tripoApiKey: configMap.get('ai_tripo_key') || process.env.TRIPO3D_API_KEY || '',
+      meshyApiKey: configMap.get('ai_meshy_key') || process.env.MESHY_API_KEY || '',
+      replicateToken: configMap.get('ai_replicate_token') || process.env.REPLICATE_API_TOKEN || '',
+      defaultAiCredits: Number(configMap.get('ai_default_credits') || 5),
+      costPerCreditBrl: Number(configMap.get('ai_cost_per_credit_brl') || 2.49),
+    };
+  } catch (err) {
+    console.error('Error fetching AI system config:', err);
+    return {
+      activeProvider: 'local_neural',
+      tripoApiKey: process.env.TRIPO3D_API_KEY || '',
+      meshyApiKey: process.env.MESHY_API_KEY || '',
+      replicateToken: process.env.REPLICATE_API_TOKEN || '',
+      defaultAiCredits: 5,
+      costPerCreditBrl: 2.49,
+    };
+  }
+}
+
+/**
+ * Atualiza as configurações e chaves de API de IA no banco de dados
+ */
+export async function updateSystemAiConfigAction(data: Partial<AdminAiConfig>) {
+  await checkAdminSession();
+
+  const updates: Array<{ key: string; value: string; description: string }> = [];
+
+  if (data.activeProvider !== undefined) {
+    updates.push({
+      key: 'ai_active_provider',
+      value: data.activeProvider,
+      description: 'Provedor de IA 3D padrão ativo',
+    });
+  }
+  if (data.tripoApiKey !== undefined) {
+    updates.push({
+      key: 'ai_tripo_key',
+      value: data.tripoApiKey,
+      description: 'Chave de API do Tripo3D',
+    });
+  }
+  if (data.meshyApiKey !== undefined) {
+    updates.push({
+      key: 'ai_meshy_key',
+      value: data.meshyApiKey,
+      description: 'Chave de API do Meshy',
+    });
+  }
+  if (data.replicateToken !== undefined) {
+    updates.push({
+      key: 'ai_replicate_token',
+      value: data.replicateToken,
+      description: 'Token de API do Replicate (Hunyuan3D)',
+    });
+  }
+  if (data.defaultAiCredits !== undefined) {
+    updates.push({
+      key: 'ai_default_credits',
+      value: String(data.defaultAiCredits),
+      description: 'Créditos gratuitos iniciais para novos usuários',
+    });
+  }
+  if (data.costPerCreditBrl !== undefined) {
+    updates.push({
+      key: 'ai_cost_per_credit_brl',
+      value: String(data.costPerCreditBrl),
+      description: 'Preço base por crédito em BRL',
+    });
+  }
+
+  for (const item of updates) {
+    const [existing] = await db
+      .select()
+      .from(systemConfig)
+      .where(eq(systemConfig.key, item.key))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(systemConfig)
+        .set({ value: item.value, description: item.description, updatedAt: new Date() })
+        .where(eq(systemConfig.key, item.key));
+    } else {
+      await db.insert(systemConfig).values({
+        key: item.key,
+        value: item.value,
+        description: item.description,
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+/**
+ * Adiciona ou remove créditos de IA de um usuário
+ */
+export async function manageUserCreditsAction(userId: string, deltaCredits: number, reason?: string) {
+  await checkAdminSession();
+
+  const [targetUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  if (!targetUser) {
+    throw new Error('Usuário não encontrado.');
+  }
+
+  const currentCredits = targetUser.aiCredits ?? 0;
+  const newCredits = Math.max(0, currentCredits + deltaCredits);
+
+  await db
+    .update(user)
+    .set({ aiCredits: newCredits, updatedAt: new Date() })
+    .where(eq(user.id, userId));
+
+  revalidatePath('/admin');
+  return { success: true, newCredits };
+}
+
+/**
+ * Busca estatísticas completas de IA e logs de auditoria
+ */
+export async function getAdminAiStats(): Promise<AdminAiStats> {
+  await checkAdminSession();
+
+  try {
+    const logs = await db
+      .select({
+        id: aiGenerationLog.id,
+        userId: aiGenerationLog.userId,
+        provider: aiGenerationLog.provider,
+        modelName: aiGenerationLog.modelName,
+        durationMs: aiGenerationLog.durationMs,
+        estimatedCostUsd: aiGenerationLog.estimatedCostUsd,
+        status: aiGenerationLog.status,
+        errorMessage: aiGenerationLog.errorMessage,
+        createdAt: aiGenerationLog.createdAt,
+        userName: user.name,
+        userEmail: user.email,
+      })
+      .from(aiGenerationLog)
+      .leftJoin(user, eq(aiGenerationLog.userId, user.id))
+      .orderBy(desc(aiGenerationLog.createdAt))
+      .limit(50);
+
+    const totalGenerations = logs.length;
+    const successGenerations = logs.filter((l) => l.status === 'completed').length;
+    const failedGenerations = totalGenerations - successGenerations;
+
+    const totalCostUsd = logs.reduce((sum, l) => sum + Number(l.estimatedCostUsd || 0), 0);
+    const totalCostBrl = totalCostUsd * 5.65; // Câmbio médio de referência
+
+    // Total de créditos de IA em circulação nas contas dos usuários
+    const allUsers = await db.select({ aiCredits: user.aiCredits }).from(user);
+    const totalCreditsCirculating = allUsers.reduce((sum, u) => sum + (u.aiCredits ?? 0), 0);
+
+    return {
+      totalGenerations,
+      successGenerations,
+      failedGenerations,
+      totalCostUsd: Number(totalCostUsd.toFixed(4)),
+      totalCostBrl: Number(totalCostBrl.toFixed(2)),
+      totalCreditsCirculating,
+      recentLogs: logs.map((l) => ({
+        id: l.id,
+        userId: l.userId,
+        userName: l.userName || 'Visitante/Anônimo',
+        userEmail: l.userEmail || '-',
+        provider: l.provider,
+        modelName: l.modelName,
+        durationMs: l.durationMs,
+        estimatedCostUsd: Number(l.estimatedCostUsd || 0),
+        status: l.status,
+        errorMessage: l.errorMessage,
+        createdAt: l.createdAt,
+      })),
+    };
+  } catch (err) {
+    console.error('Error fetching AI logs:', err);
+    return {
+      totalGenerations: 0,
+      successGenerations: 0,
+      failedGenerations: 0,
+      totalCostUsd: 0,
+      totalCostBrl: 0,
+      totalCreditsCirculating: 0,
+      recentLogs: [],
+    };
+  }
+}
+
+/**
+ * Retorna dados consolidados para o Dashboard Completo
+ */
+export async function getAdminFullDashboardData() {
+  const stats = await getAdminData();
+  const aiConfig = await getSystemAiConfig();
+  const aiStats = await getAdminAiStats();
+
+  const allProjects = await db.select({ mode: project.mode }).from(project);
+  const projects2DCount = allProjects.filter((p) => p.mode !== 'ultra').length;
+  const projects3DCount = allProjects.filter((p) => p.mode === 'ultra').length;
+
+  return {
+    stats,
+    aiStats,
+    aiConfig,
+    projects2DCount,
+    projects3DCount,
+  };
 }

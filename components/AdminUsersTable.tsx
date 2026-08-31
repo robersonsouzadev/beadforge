@@ -17,6 +17,8 @@ import {
   Clock,
   Shield,
   Crown,
+  Coins,
+  Sparkles,
 } from 'lucide-react';
 import {
   AdminUserItem,
@@ -24,6 +26,7 @@ import {
   deleteAdminUserAction,
 } from '@/app/actions/admin';
 import { AdminUserModal } from '@/components/AdminUserModal';
+import { AdminUserCreditsModal } from '@/components/admin/AdminUserCreditsModal';
 import { useRouter } from 'next/navigation';
 
 export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
@@ -34,6 +37,7 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<AdminUserItem | null>(null);
+  const [userForCredits, setUserForCredits] = useState<AdminUserItem | null>(null);
 
   // Transition for quick actions
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
@@ -206,6 +210,7 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
                 <th className="py-3 px-4">Usuário</th>
                 <th className="py-3 px-4">Email</th>
                 <th className="py-3 px-4">Plano</th>
+                <th className="py-3 px-4 text-center">Créditos IA</th>
                 <th className="py-3 px-4 text-center">Projetos</th>
                 <th className="py-3 px-4">Data Cadastro</th>
                 <th className="py-3 px-4">Status / Validade</th>
@@ -215,7 +220,7 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
             <tbody className="divide-y divide-zinc-800/60 font-medium">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-zinc-500">
+                  <td colSpan={8} className="py-8 text-center text-zinc-500">
                     Nenhum usuário encontrado com os filtros atuais.
                   </td>
                 </tr>
@@ -266,6 +271,19 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
                             GRATUITO
                           </span>
                         )}
+                      </td>
+
+                      {/* Créditos IA 3D */}
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setUserForCredits(u)}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 font-mono text-[11px] font-bold transition group"
+                          title="Clique para ajustar créditos"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400 group-hover:rotate-12 transition-transform" />
+                          <span>{u.aiCredits}</span>
+                        </button>
                       </td>
 
                       <td className="py-3 px-4 text-center">
@@ -367,6 +385,13 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
           setUserToEdit(null);
         }}
         userToEdit={userToEdit}
+      />
+
+      {/* Modal de Gestão de Créditos de IA */}
+      <AdminUserCreditsModal
+        isOpen={Boolean(userForCredits)}
+        onClose={() => setUserForCredits(null)}
+        user={userForCredits}
       />
     </>
   );

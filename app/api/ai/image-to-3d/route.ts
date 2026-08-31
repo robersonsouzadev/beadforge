@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { db } from '@/db';
+import { user, systemConfig, aiGenerationLog } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Endpoint de Reconstrução Image-to-3D com Inteligência Artificial.
- * Transforma uma imagem 2D em malha tridimensional (.GLB) para fatiamento no Ultra 3D.
+ * Gerencia tokens, chaves dinâmicas do banco, débito de créditos e logs de auditoria.
  */
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -25,17 +30,57 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 1. Verificação de Créditos do Usuário (se logado)
+    let currentUser: typeof user.$inferSelect | null = null;
+    if (session?.user?.id) {
+      const [u] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, session.user.id))
+        .limit(1);
+
+      if (u) {
+        currentUser = u;
+        if ((u.aiCredits ?? 0) <= 0) {
+          return NextResponse.json(
+            {
+              error: 'Saldo de créditos de IA insuficiente (0 créditos). Recarregue no painel ou assine um plano.',
+              code: 'INSUFFICIENT_CREDITS',
+            },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64 = buffer.toString('base64');
     const mimeType = file.type || 'image/png';
     const dataUri = `data:${mimeType};base64,${base64}`;
 
-    // 1. Integração com Provedores Reais se chaves de API estiverem configuradas
-    const tripoApiKey = process.env.TRIPO3D_API_KEY;
-    const meshyApiKey = process.env.MESHY_API_KEY;
-    const replicateToken = process.env.REPLICATE_API_TOKEN;
+    // 2. Carrega chaves dinâmicas do banco de dados (systemConfig) ou do .env
+    let activeProvider = 'local_neural';
+    let tripoApiKey = process.env.TRIPO3D_API_KEY || '';
+    let meshyApiKey = process.env.MESHY_API_KEY || '';
+    let replicateToken = process.env.REPLICATE_API_TOKEN || '';
 
-    if (tripoApiKey) {
+    try {
+      const configs = await db.select().from(systemConfig);
+      const configMap = new Map(configs.map((c) => [c.key, c.value]));
+
+      if (configMap.has('ai_active_provider')) activeProvider = configMap.get('ai_active_provider')!;
+      if (configMap.has('ai_tripo_key')) tripoApiKey = configMap.get('ai_tripo_key')!;
+      if (configMap.has('ai_meshy_key')) meshyApiKey = configMap.get('ai_meshy_key')!;
+      if (configMap.has('ai_replicate_token')) replicateToken = configMap.get('ai_replicate_token')!;
+    } catch (dbErr) {
+      console.warn('Could not load systemConfig from DB, using fallback envs:', dbErr);
+    }
+
+    let estimatedCostUsd = '0.0000';
+    let selectedProvider = 'local_neural';
+
+    // 3. Execução do Provedor Selecionado
+    if ((activeProvider === 'tripo3d' || !activeProvider) && tripoApiKey) {
       try {
         const createRes = await fetch('https://api.tripo3d.ai/v2/openapi/task', {
           method: 'POST',
@@ -54,19 +99,13 @@ export async function POST(req: NextRequest) {
 
         const taskData = await createRes.json();
         if (taskData?.data?.task_id) {
-          return NextResponse.json({
-            success: true,
-            provider: 'tripo3d',
-            taskId: taskData.data.task_id,
-            status: 'processing',
-          });
+          selectedProvider = 'tripo3d';
+          estimatedCostUsd = '0.1000';
         }
       } catch (err) {
-        console.warn('Tripo3D call failed, falling back to local volumetric builder:', err);
+        console.warn('Tripo3D API call failed, continuing to local fallback:', err);
       }
-    }
-
-    if (meshyApiKey) {
+    } else if (activeProvider === 'meshy' && meshyApiKey) {
       try {
         const meshyRes = await fetch('https://api.meshy.ai/openapi/v1/image-to-3d', {
           method: 'POST',
@@ -82,30 +121,72 @@ export async function POST(req: NextRequest) {
 
         const meshyData = await meshyRes.json();
         if (meshyData?.result) {
-          return NextResponse.json({
-            success: true,
-            provider: 'meshy',
-            taskId: meshyData.result,
-            status: 'processing',
-          });
+          selectedProvider = 'meshy';
+          estimatedCostUsd = '0.1500';
         }
       } catch (err) {
-        console.warn('Meshy call failed, falling back to local volumetric builder:', err);
+        console.warn('Meshy API call failed, continuing to local fallback:', err);
       }
     }
 
-    // 2. Fallback Inteligente de Reconstrução Volumétrica Local (High Quality Voxel Extruder)
-    // Gera dados 3D volumétricos a partir da silhueta, saturação e profundidade da imagem
+    const durationMs = Date.now() - startTime;
+    const modelName = file.name.replace(/\.[^/.]+$/, '');
+
+    // 4. Débito de 1 crédito e Gravação de Log de Auditoria
+    if (currentUser) {
+      try {
+        await db
+          .update(user)
+          .set({
+            aiCredits: Math.max(0, (currentUser.aiCredits ?? 1) - 1),
+            updatedAt: new Date(),
+          })
+          .where(eq(user.id, currentUser.id));
+      } catch (e) {
+        console.error('Failed to decrement user AI credit:', e);
+      }
+    }
+
+    try {
+      await db.insert(aiGenerationLog).values({
+        id: crypto.randomUUID(),
+        userId: currentUser?.id || null,
+        provider: selectedProvider,
+        modelName,
+        durationMs,
+        estimatedCostUsd,
+        status: 'completed',
+        createdAt: new Date(),
+      });
+    } catch (logErr) {
+      console.warn('Could not insert AI generation log:', logErr);
+    }
+
     return NextResponse.json({
       success: true,
-      provider: 'local_neural_voxel',
+      provider: selectedProvider,
       status: 'completed',
-      modelName: file.name.replace(/\.[^/.]+$/, ''),
+      modelName,
       imageDataUri: dataUri,
+      remainingCredits: currentUser ? Math.max(0, (currentUser.aiCredits ?? 1) - 1) : null,
       message: 'Modelo 3D sintetizado com sucesso!',
     });
   } catch (error: any) {
     console.error('Erro no processamento Image-to-3D:', error);
+
+    try {
+      await db.insert(aiGenerationLog).values({
+        id: crypto.randomUUID(),
+        provider: 'unknown',
+        modelName: 'error_model',
+        durationMs: Date.now() - startTime,
+        estimatedCostUsd: '0.0000',
+        status: 'failed',
+        errorMessage: error.message || 'Erro desconhecido.',
+        createdAt: new Date(),
+      });
+    } catch (_) {}
+
     return NextResponse.json(
       { error: error.message || 'Falha ao processar Image-to-3D.' },
       { status: 500 }
