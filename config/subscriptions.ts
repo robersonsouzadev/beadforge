@@ -81,13 +81,13 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
     prices: {
       monthly: {
         amount: 19.9,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || 'price_creator_monthly',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || 'price_1UAZlbRsgTNu3Z0KBweNOfZN',
         displayPrice: 'R$ 19,90',
         period: '/mês',
       },
       yearly: {
         amount: 199.0,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || 'price_creator_yearly',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || 'price_1UAZnhRsgTNu3Z0KSJbodpTV',
         displayPrice: 'R$ 16,50',
         period: '/mês (faturado R$ 199/ano)',
         savingsBadge: 'Economize 17%',
@@ -121,13 +121,13 @@ export const SUBSCRIPTION_PLANS: Record<'free' | 'pro' | 'studio', Plan> = {
     prices: {
       monthly: {
         amount: 79.0,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_MONTHLY || 'price_studio_monthly',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_MONTHLY || 'price_1UAZoSRsgTNu3Z0K2vUx8DxB',
         displayPrice: 'R$ 79,00',
         period: '/mês',
       },
       yearly: {
         amount: 790.0,
-        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_YEARLY || 'price_studio_yearly',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_YEARLY || 'price_1UAZpCRsgTNu3Z0KC2dWWWQo',
         displayPrice: 'R$ 65,80',
         period: '/mês (faturado R$ 790/ano)',
         savingsBadge: 'Economize 17% (2 meses grátis)',

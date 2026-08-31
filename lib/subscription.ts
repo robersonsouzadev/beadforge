@@ -48,6 +48,8 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   const isStudio = isPro && (
     priceId.includes('studio') ||
     priceId === 'studio' ||
+    priceId === 'price_1uazosrsgtnu3z0k2vux8dxb' ||
+    priceId === 'price_1uazpcrsgtnu3z0kc2dwwwqo' ||
     (Boolean(studioMonthly) && priceId === studioMonthly) ||
     (Boolean(studioYearly) && priceId === studioYearly)
   );
