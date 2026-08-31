@@ -14,7 +14,9 @@ import {
   SlidersHorizontal,
   Box,
   LayoutGrid,
+  Globe,
 } from 'lucide-react';
+import { PublishPatternModal } from '@/components/gallery/PublishPatternModal';
 
 interface HeaderProps {
   onSave?: () => void;
@@ -43,6 +45,7 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
 
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   // 1. Exportar PDF Vetorial para Impressão (2D ou 3D Multi-Camadas)
   const handleExportPdf = async () => {
@@ -414,6 +417,19 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
           </div>
         )}
 
+        {/* Botão de Publicar na Galeria Pública */}
+        {currentId && (
+          <button
+            type="button"
+            onClick={() => setIsPublishModalOpen(true)}
+            className="bg-zinc-800 hover:bg-zinc-750 text-amber-400 hover:text-amber-300 border border-zinc-700 font-bold px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs shadow-md transition-all active:scale-95"
+            title="Publicar na Galeria Pública"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Publicar</span>
+          </button>
+        )}
+
         {/* Menu Dropdown de Exportação */}
         <div className="relative">
           <button
@@ -473,6 +489,17 @@ export function Header({ onSave, isSaving = false, saveStatus = 'idle', currentI
           )}
         </div>
       </div>
+
+      {currentId && (
+        <PublishPatternModal
+          isOpen={isPublishModalOpen}
+          onClose={() => setIsPublishModalOpen(false)}
+          projectId={currentId}
+          defaultTitle={projectName}
+          beadCount={grid?.totalBeads}
+          colorCount={summary?.length}
+        />
+      )}
     </header>
   );
 }

@@ -27,6 +27,10 @@ export function Canvas() {
     showPlateDivisions,
     showGridNumbers,
     multiBoardConfig,
+    isCraftingMode,
+    placedBeads,
+    togglePlacedBead,
+    resetPlacedBeads,
   } = useEditorStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -235,6 +239,21 @@ export function Canvas() {
 
           ctx.globalAlpha = 1.0;
 
+          // Marcação visual de Bead Colocado (Modo Montagem / Crafting Tracker)
+          const beadKey = `${r},${c}`;
+          if (placedBeads[beadKey]) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillRect(cellX, cellY, currentCellSize, currentCellSize);
+
+            if (currentCellSize >= 8) {
+              ctx.fillStyle = '#10B981'; // Emerald 500
+              ctx.font = `bold ${Math.max(8, Math.floor(currentCellSize * 0.6))}px sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('✓', cellX + currentCellSize / 2, cellY + currentCellSize / 2);
+            }
+          }
+
           // Anel de destaque se for a cor em foco
           if (highlightBeadCode && cell.beadCode === highlightBeadCode) {
             ctx.strokeStyle = '#06B6D4'; // Cyan 500 vivo
@@ -364,6 +383,7 @@ export function Canvas() {
     showPlateDivisions,
     showGridNumbers,
     multiBoardConfig,
+    placedBeads,
   ]);
 
   useEffect(() => {
@@ -412,6 +432,14 @@ export function Canvas() {
 
     const cellInfo = getCellFromMouse(e.clientX, e.clientY);
     if (!cellInfo) return;
+
+    // Modo Crafting Tracker (Assistente de Montagem Bead-a-Bead)
+    if (isCraftingMode) {
+      if (!cellInfo.cell.isEmpty) {
+        togglePlacedBead(cellInfo.row, cellInfo.col);
+      }
+      return;
+    }
 
     if (activeTool === 'brush') {
       paintCell(cellInfo.row, cellInfo.col);
@@ -586,6 +614,32 @@ export function Canvas() {
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
       />
+
+      {/* Banner Flutuante de Progresso do Modo Montagem (Crafting Tracker) */}
+      {isCraftingMode && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-zinc-900/95 backdrop-blur-md border border-amber-500/40 rounded-2xl px-4 py-2 text-xs flex items-center gap-3 text-zinc-200 shadow-2xl z-30 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold text-white">Modo Montagem Ativo</span>
+          </div>
+
+          <span className="text-zinc-600">|</span>
+
+          <div className="font-mono text-zinc-300">
+            <strong className="text-emerald-400">{Object.keys(placedBeads).length}</strong> / {grid?.totalBeads || 0} beads ({grid?.totalBeads ? Math.round((Object.keys(placedBeads).length / grid.totalBeads) * 100) : 0}%)
+          </div>
+
+          <span className="text-zinc-600">|</span>
+
+          <button
+            type="button"
+            onClick={resetPlacedBeads}
+            className="text-[11px] text-zinc-400 hover:text-rose-400 hover:underline transition"
+          >
+            Limpar
+          </button>
+        </div>
+      )}
 
       {/* Badge de informações da célula em hover com Estilo Graphite Pro */}
       {hoveredCell && (

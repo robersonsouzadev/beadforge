@@ -5,6 +5,9 @@ import type { GridMatrix } from '@/core/schemas/grid';
 import type { BeadSummary } from '@/core/schemas/project';
 import { auth } from '@/lib/auth';
 import { getUserSubscription } from '@/lib/subscription';
+import { db } from '@/db';
+import { creatorProfile } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +18,26 @@ export async function POST(req: NextRequest) {
     });
 
     let isPro = false;
+    let studioName: string | undefined = undefined;
+    let contactPhone: string | undefined = undefined;
+    let instagramHandle: string | undefined = undefined;
+
     if (session?.user) {
       const sub = await getUserSubscription(session.user.id);
       isPro = !!sub.isPro;
+
+      // Fetch creator profile for White-Label branding
+      const [profile] = await db
+        .select()
+        .from(creatorProfile)
+        .where(eq(creatorProfile.userId, session.user.id))
+        .limit(1);
+
+      if (profile) {
+        studioName = profile.displayName;
+        contactPhone = profile.whatsappNumber || undefined;
+        instagramHandle = profile.instagramHandle || undefined;
+      }
     }
 
     const body = await req.json();
@@ -75,6 +95,9 @@ export async function POST(req: NextRequest) {
       cellSize: options?.cellSize,
       isPro,
       watermark: !isPro,
+      studioName,
+      contactPhone,
+      instagramHandle,
     });
 
     const chunks: Buffer[] = [];

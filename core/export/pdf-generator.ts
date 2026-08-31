@@ -14,6 +14,9 @@ export interface PDFOptions {
   pegboardSize?: number; // 29 por padrão
   watermark?: boolean;
   isPro?: boolean;
+  studioName?: string;
+  contactPhone?: string;
+  instagramHandle?: string;
 }
 
 const GRID_LINE_COLOR = '#CCCCCC';
@@ -273,11 +276,24 @@ export function generateBeadPDF(
         }
       }
 
-      // Marca d'água discreta de paridade para plano gratuito
+      // Marca d'água discreta de paridade para plano gratuito OU Branding White-Label Studio
       const isWatermarkActive = options.watermark || options.isPro === false;
       if (isWatermarkActive) {
         doc.fontSize(6.5).fillColor('#999999').text(
           'Criado gratuitamente com BeadForge Studio • app.hamabeadsbrasil.com.br',
+          margin,
+          pageH + margin - 8,
+          { width: pageW, align: 'center' }
+        );
+      } else if (options.studioName || options.contactPhone || options.instagramHandle) {
+        // Branding White-Label do Ateliê do Assinante Studio
+        const brandParts = [];
+        if (options.studioName) brandParts.push(`Ateliê: ${options.studioName}`);
+        if (options.contactPhone) brandParts.push(`WhatsApp: ${options.contactPhone}`);
+        if (options.instagramHandle) brandParts.push(`@${options.instagramHandle}`);
+
+        doc.fontSize(7).fillColor('#555555').text(
+          brandParts.join(' • '),
           margin,
           pageH + margin - 8,
           { width: pageW, align: 'center' }

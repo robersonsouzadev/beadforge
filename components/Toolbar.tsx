@@ -12,6 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  CheckSquare,
 } from 'lucide-react';
 
 export function Toolbar() {
@@ -26,6 +27,8 @@ export function Toolbar() {
     redo,
     history,
     historyIndex,
+    isCraftingMode,
+    toggleCraftingMode,
   } = useEditorStore();
 
   const tools: { id: ToolType; label: string; shortcut: string; icon: React.ReactNode }[] = [
@@ -40,11 +43,14 @@ export function Toolbar() {
       {/* Ferramentas de Desenho com Estilo Arcade Studio */}
       <div className="flex items-center gap-0.5 sm:gap-1 bg-zinc-800/80 p-0.5 rounded-lg border border-zinc-700/60 shadow-inner shrink-0">
         {tools.map((tool) => {
-          const isActive = activeTool === tool.id;
+          const isActive = activeTool === tool.id && !isCraftingMode;
           return (
             <button
               key={tool.id}
-              onClick={() => setActiveTool(tool.id)}
+              onClick={() => {
+                if (isCraftingMode) toggleCraftingMode();
+                setActiveTool(tool.id);
+              }}
               title={`${tool.label} (${tool.shortcut})`}
               className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs transition-all shrink-0 ${
                 isActive
@@ -63,6 +69,21 @@ export function Toolbar() {
           );
         })}
       </div>
+
+      {/* Botão de Modo Montagem (Crafting Tracker) */}
+      <button
+        type="button"
+        onClick={toggleCraftingMode}
+        title="Modo Montagem: Toque nos beads colocados para marcá-los"
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition shadow-sm ${
+          isCraftingMode
+            ? 'bg-emerald-500 text-zinc-950 border-emerald-400 ring-2 ring-emerald-400/40 animate-pulse'
+            : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-750'
+        }`}
+      >
+        <CheckSquare className="w-3.5 h-3.5" />
+        <span>Modo Montagem</span>
+      </button>
 
       {/* Cor Selecionada Atual */}
       {selectedBead && (

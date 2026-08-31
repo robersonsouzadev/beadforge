@@ -89,6 +89,12 @@ interface EditorState {
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
   toggleZenMode: () => void;
+  // Crafting Tracker (Assistente de Montagem Bead-a-Bead)
+  isCraftingMode: boolean;
+  placedBeads: Record<string, boolean>;
+  toggleCraftingMode: () => void;
+  togglePlacedBead: (row: number, col: number) => void;
+  resetPlacedBeads: () => void;
 
   // --- MÓDULO BEADFORGE ULTRA 3D (Camadas & Voxels) ---
   grid3D: VoxelGrid3D | null;
@@ -196,6 +202,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isRightSidebarCollapsed: nextZen,
     };
   }),
+
+  // Crafting Tracker (Assistente de Montagem)
+  isCraftingMode: false,
+  placedBeads: {},
+  toggleCraftingMode: () => set((state) => ({ isCraftingMode: !state.isCraftingMode })),
+  togglePlacedBead: (row, col) =>
+    set((state) => {
+      const key = `${row},${col}`;
+      const next = { ...state.placedBeads };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return { placedBeads: next };
+    }),
+  resetPlacedBeads: () => set({ placedBeads: {} }),
 
   currentProjectId: null,
   setCurrentProjectId: (id) => set({ currentProjectId: id }),

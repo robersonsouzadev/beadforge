@@ -64,4 +64,29 @@ describe('PDF & BOM Export Engine', () => {
     expect(SUBSCRIPTION_PLANS.free.limits.exportFormats).toContain('png');
     expect(SUBSCRIPTION_PLANS.free.limits.maxDimension).toBeGreaterThanOrEqual(200);
   });
+
+  it('gera PDF White-Label personalizado para assinantes Studio', async () => {
+    const summary = buildBeadSummary(grid);
+    const doc = generateBeadPDF(grid, summary, {
+      title: 'Encomenda Quadro Mário',
+      pageSize: 'A4',
+      orientation: 'portrait',
+      isPro: true,
+      watermark: false,
+      studioName: 'Ateliê Geek Art',
+      contactPhone: '11999998888',
+      instagramHandle: 'ateliegeekart',
+    });
+
+    const chunks: Buffer[] = [];
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+      doc.end();
+    });
+
+    expect(buffer.length).toBeGreaterThan(1000);
+    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+  });
 });

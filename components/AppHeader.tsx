@@ -576,6 +576,15 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
                 </div>
 
                 <Link
+                  href="/dashboard/settings/profile"
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-zinc-300 hover:text-white transition"
+                >
+                  <UserIcon className="w-4 h-4 text-amber-400" />
+                  <span>Perfil & Ateliê (White-Label)</span>
+                </Link>
+
+                <Link
                   href="/dashboard/settings/billing"
                   onClick={() => setShowUserMenu(false)}
                   className="w-full px-3.5 py-2 flex items-center gap-2.5 hover:bg-zinc-800 text-zinc-300 hover:text-white transition"
