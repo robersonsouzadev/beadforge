@@ -40,8 +40,17 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   const isPeriodValid = periodEnd > 0 ? periodEnd + 86_400_000 > now : false;
 
   const isPro = (sub.status === 'active' || sub.status === 'trialing') && (periodEnd === 0 || isPeriodValid);
-  const priceId = (sub.stripePriceId || '').toLowerCase();
-  const isStudio = isPro && (priceId.includes('studio') || priceId === 'studio');
+  const rawPriceId = (sub.stripePriceId || '').trim();
+  const priceId = rawPriceId.toLowerCase();
+  const studioMonthly = (process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_MONTHLY || '').toLowerCase();
+  const studioYearly = (process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO_YEARLY || '').toLowerCase();
+
+  const isStudio = isPro && (
+    priceId.includes('studio') ||
+    priceId === 'studio' ||
+    (Boolean(studioMonthly) && priceId === studioMonthly) ||
+    (Boolean(studioYearly) && priceId === studioYearly)
+  );
   const planId: 'free' | 'pro' | 'studio' = isPro ? (isStudio ? 'studio' : 'pro') : 'free';
 
   return {
