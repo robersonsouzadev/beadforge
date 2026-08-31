@@ -26,6 +26,7 @@ import {
   Loader2,
   CheckCircle2,
   Layers,
+  Boxes,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -338,6 +339,7 @@ export function AppHeader({ user, isPro }: AppHeaderProps) {
   const navLinks = [
     { href: '/dashboard', label: 'Meus Projetos', icon: FolderKanban },
     { href: '/editor', label: 'Editor 2D', icon: LayoutGrid },
+    { href: '/inventory', label: 'Estoque', icon: Boxes },
     { href: '/ultra', label: 'Ultra 3D', icon: Box, requiresPro: true },
   ];
 
