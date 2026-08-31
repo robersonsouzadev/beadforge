@@ -9,7 +9,16 @@ import {
   calculateMultiBoardConfig,
   MultiBoardCalculation,
 } from '@/core/pegboards/manager';
-import { setCellBead, eraseCell, floodFill, batchReplaceBead } from '@/core/grid/grid-editor';
+import {
+  setCellBead,
+  eraseCell,
+  floodFill,
+  batchReplaceBead,
+  flipGridHorizontal,
+  flipGridVertical,
+  rotateGrid90,
+  clearAllGrid,
+} from '@/core/grid/grid-editor';
 import { buildBeadSummary } from '@/core/grid/summary-builder';
 import { VoxelEngine } from '@/core/voxel/voxelizer';
 
@@ -61,12 +70,39 @@ interface EditorState {
   bgTolerance: number;
 
   // Ajustes de Cor e Processamento 2D
+  conversionPreset: 'custom' | 'pixel-art' | 'portrait' | 'easy-build' | 'high-fidelity';
+  applyConversionPreset: (preset: 'pixel-art' | 'portrait' | 'easy-build' | 'high-fidelity') => void;
   ditherMode: 'none' | 'floyd-steinberg' | 'atkinson';
   contrast: number;
   saturation: number;
   brightness: number;
   removeBackground: boolean;
   isProcessing: boolean;
+
+  // Filtro de Cores Possuídas / Minhas Cores da Gaveta
+  enabledBeadCodes: Record<string, boolean> | null;
+  isPaletteFilterModalOpen: boolean;
+  setIsPaletteFilterModalOpen: (open: boolean) => void;
+  toggleBeadCodeEnabled: (code: string) => void;
+  enableAllBeadCodes: () => void;
+  disableAllBeadCodes: () => void;
+  setEnabledBeadCodes: (codes: string[]) => void;
+
+  // Imagem de Referência / Modo Calque (Overlay Tracing)
+  referenceImageUrl: string | null;
+  referenceOpacity: number;
+  isReferenceOverlayActive: boolean;
+  isReferenceModalOpen: boolean;
+  setIsReferenceModalOpen: (open: boolean) => void;
+  setReferenceImage: (file: File | null, url: string | null) => void;
+  setReferenceOpacity: (opacity: number) => void;
+  toggleReferenceOverlay: () => void;
+
+  // Ferramentas de Transformação da Grade
+  flipHorizontal: () => void;
+  flipVertical: () => void;
+  rotate90: () => void;
+  clearGrid: () => void;
 
   // Visualização Canvas 2D
   zoom: number;
@@ -737,5 +773,156 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         historyIndex: historyIndex + 1,
       });
     }
+  },
+
+  // Presets de Estilo de Conversão
+  conversionPreset: 'custom',
+  applyConversionPreset: (preset) => {
+    if (preset === 'pixel-art') {
+      set({
+        conversionPreset: 'pixel-art',
+        contrast: 25,
+        saturation: 20,
+        brightness: 0,
+        ditherMode: 'none',
+        bgTolerance: 30,
+      });
+    } else if (preset === 'portrait') {
+      set({
+        conversionPreset: 'portrait',
+        contrast: 5,
+        saturation: 0,
+        brightness: 0,
+        ditherMode: 'floyd-steinberg',
+        bgTolerance: 20,
+      });
+    } else if (preset === 'easy-build') {
+      set({
+        conversionPreset: 'easy-build',
+        contrast: 30,
+        saturation: -10,
+        brightness: 5,
+        ditherMode: 'none',
+        bgTolerance: 35,
+      });
+    } else if (preset === 'high-fidelity') {
+      set({
+        conversionPreset: 'high-fidelity',
+        contrast: 10,
+        saturation: 10,
+        brightness: 0,
+        ditherMode: 'atkinson',
+        bgTolerance: 15,
+      });
+    }
+  },
+
+  // Filtro de Cores Possuídas / Minhas Cores da Gaveta
+  enabledBeadCodes: null,
+  isPaletteFilterModalOpen: false,
+  setIsPaletteFilterModalOpen: (open) => set({ isPaletteFilterModalOpen: open }),
+  toggleBeadCodeEnabled: (code) =>
+    set((state) => {
+      const current = state.enabledBeadCodes
+        ? { ...state.enabledBeadCodes }
+        : state.activePalette.reduce((acc, c) => ({ ...acc, [c.code]: true }), {} as Record<string, boolean>);
+      current[code] = !current[code];
+      return { enabledBeadCodes: current };
+    }),
+  enableAllBeadCodes: () =>
+    set((state) => {
+      const all = state.activePalette.reduce((acc, c) => ({ ...acc, [c.code]: true }), {} as Record<string, boolean>);
+      return { enabledBeadCodes: all };
+    }),
+  disableAllBeadCodes: () =>
+    set((state) => {
+      const none = state.activePalette.reduce((acc, c) => ({ ...acc, [c.code]: false }), {} as Record<string, boolean>);
+      return { enabledBeadCodes: none };
+    }),
+  setEnabledBeadCodes: (codes) =>
+    set((state) => {
+      const codeSet = new Set(codes);
+      const map = state.activePalette.reduce(
+        (acc, c) => ({ ...acc, [c.code]: codeSet.has(c.code) }),
+        {} as Record<string, boolean>
+      );
+      return { enabledBeadCodes: map };
+    }),
+
+  // Imagem de Referência / Modo Calque
+  referenceImageUrl: null,
+  referenceOpacity: 0.45,
+  isReferenceOverlayActive: false,
+  isReferenceModalOpen: false,
+  setIsReferenceModalOpen: (open) => set({ isReferenceModalOpen: open }),
+  setReferenceImage: (file, url) =>
+    set({
+      referenceImageUrl: url,
+      isReferenceOverlayActive: !!url,
+    }),
+  setReferenceOpacity: (opacity) => set({ referenceOpacity: Math.max(0.05, Math.min(1.0, opacity)) }),
+  toggleReferenceOverlay: () => set((state) => ({ isReferenceOverlayActive: !state.isReferenceOverlayActive })),
+
+  // Ferramentas de Transformação da Grade
+  flipHorizontal: () => {
+    const { grid, history, historyIndex } = get();
+    if (!grid) return;
+    const newGrid = flipGridHorizontal(grid);
+    const newSummary = buildBeadSummary(newGrid, 'count');
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newGrid);
+    set({
+      grid: newGrid,
+      summary: newSummary,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+    });
+  },
+
+  flipVertical: () => {
+    const { grid, history, historyIndex } = get();
+    if (!grid) return;
+    const newGrid = flipGridVertical(grid);
+    const newSummary = buildBeadSummary(newGrid, 'count');
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newGrid);
+    set({
+      grid: newGrid,
+      summary: newSummary,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+    });
+  },
+
+  rotate90: () => {
+    const { grid, history, historyIndex } = get();
+    if (!grid) return;
+    const newGrid = rotateGrid90(grid);
+    const newSummary = buildBeadSummary(newGrid, 'count');
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newGrid);
+    set({
+      grid: newGrid,
+      gridWidth: newGrid.width,
+      gridHeight: newGrid.height,
+      summary: newSummary,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+    });
+  },
+
+  clearGrid: () => {
+    const { grid, history, historyIndex } = get();
+    if (!grid) return;
+    const newGrid = clearAllGrid(grid);
+    const newSummary = buildBeadSummary(newGrid, 'count');
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newGrid);
+    set({
+      grid: newGrid,
+      summary: newSummary,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+    });
   },
 }));

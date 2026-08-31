@@ -24,6 +24,7 @@ import {
   RotateCcw,
   Sparkle,
   X,
+  Filter,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -53,6 +54,10 @@ export function Sidebar({ onClose, isDrawer = false }: SidebarProps) {
     setShowGridNumbers,
     paletteId,
     setPaletteId,
+    enabledBeadCodes,
+    setIsPaletteFilterModalOpen,
+    conversionPreset,
+    applyConversionPreset,
     ditherMode,
     setDitherMode,
     contrast,
@@ -202,6 +207,16 @@ export function Sidebar({ onClose, isDrawer = false }: SidebarProps) {
       formData.append('brightness', String(brightness));
       formData.append('removeBackground', String(removeBackground));
 
+      const { enabledBeadCodes } = useEditorStore.getState();
+      if (enabledBeadCodes) {
+        const allowedCodes = Object.entries(enabledBeadCodes)
+          .filter(([_, isEnabled]) => isEnabled)
+          .map(([code]) => code);
+        if (allowedCodes.length > 0) {
+          formData.append('enabledBeadCodes', JSON.stringify(allowedCodes));
+        }
+      }
+
       const res = await fetch('/api/process', {
         method: 'POST',
         body: formData,
@@ -347,6 +362,22 @@ export function Sidebar({ onClose, isDrawer = false }: SidebarProps) {
               }
             }}
           />
+
+          <button
+            type="button"
+            onClick={() => setIsPaletteFilterModalOpen(true)}
+            className="w-full py-1.5 px-2.5 rounded-xl border border-zinc-700 bg-zinc-950/70 hover:bg-zinc-800 text-zinc-300 hover:text-white flex items-center justify-between text-[11px] font-medium transition shadow-inner"
+          >
+            <span className="flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5 text-amber-400" />
+              <span>Filtrar Cores da Minha Gaveta</span>
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold">
+              {enabledBeadCodes
+                ? `${Object.values(enabledBeadCodes).filter(Boolean).length} cores`
+                : 'Todas'}
+            </span>
+          </button>
         </div>
 
         {/* 4. Configurador de Placas Pegboard & Multiplicação */}
@@ -570,7 +601,41 @@ export function Sidebar({ onClose, isDrawer = false }: SidebarProps) {
           </div>
         </div>
 
-        {/* 6. Dithering & Remoção de Fundo */}
+        {/* 6. Presets de Estilo de Conversão */}
+        <div className="space-y-2 pt-2 border-t border-zinc-800">
+          <label className="flex items-center gap-1.5 font-semibold text-zinc-200 text-[11px] tracking-wide uppercase">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Estilo de Conversão (Presets)</span>
+          </label>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { id: 'pixel-art', label: '🎮 Pixel Art', desc: 'Cores vivas, sem dither' },
+              { id: 'portrait', label: '🖼️ Retrato / Foto', desc: 'Tons suaves de pele' },
+              { id: 'easy-build', label: '💎 Fácil Montagem', desc: 'Poucas cores, nítido' },
+              { id: 'high-fidelity', label: '✨ Alta Fidelidade', desc: 'Máximo detalhe' },
+            ].map((preset) => {
+              const isActive = conversionPreset === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyConversionPreset(preset.id as any)}
+                  className={`p-2 rounded-xl border text-left transition-all ${
+                    isActive
+                      ? 'bg-amber-500/15 border-amber-400 text-white shadow-sm ring-1 ring-amber-400/30'
+                      : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}
+                >
+                  <span className="font-bold text-[11px] block text-amber-300">{preset.label}</span>
+                  <span className="text-[9px] text-zinc-400 block truncate">{preset.desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 7. Dithering & Remoção de Fundo */}
         <div className="space-y-2.5 pt-2 border-t border-zinc-800">
           <label className="flex items-center gap-1.5 font-semibold text-zinc-200 text-[11px] tracking-wide uppercase">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />

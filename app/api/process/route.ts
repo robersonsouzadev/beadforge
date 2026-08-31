@@ -76,7 +76,25 @@ export async function POST(req: NextRequest) {
 
     // 3. Obtenção da paleta e Mapeamento de Cores CIEDE2000
     const palette = getPaletteById(paletteId);
-    const matcher = new PaletteMatcher(palette.colors);
+    const enabledCodesJson = formData.get('enabledBeadCodes') as string | null;
+    let activeColors = palette.colors;
+
+    if (enabledCodesJson) {
+      try {
+        const allowed = JSON.parse(enabledCodesJson) as string[];
+        if (Array.isArray(allowed) && allowed.length > 0) {
+          const allowedSet = new Set(allowed);
+          const filtered = palette.colors.filter((c) => allowedSet.has(c.code));
+          if (filtered.length > 0) {
+            activeColors = filtered;
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao parsear enabledBeadCodes:', err);
+      }
+    }
+
+    const matcher = new PaletteMatcher(activeColors);
     const beadGrid = applyDithering(pixels, width, height, matcher, ditherMode, emptyMask);
 
     // 4. Construção da Matriz e Resumo

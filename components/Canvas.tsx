@@ -31,7 +31,29 @@ export function Canvas() {
     placedBeads,
     togglePlacedBead,
     resetPlacedBeads,
+    referenceImageUrl,
+    referenceOpacity,
+    isReferenceOverlayActive,
   } = useEditorStore();
+
+  const refImageElemRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    if (referenceImageUrl) {
+      const img = new Image();
+      img.src = referenceImageUrl;
+      img.onload = () => {
+        refImageElemRef.current = img;
+        // Force a re-render
+        if (canvasRef.current) {
+          const ctx = canvasRef.current.getContext('2d');
+          if (ctx) ctx.clearRect(0, 0, 0, 0);
+        }
+      };
+    } else {
+      refImageElemRef.current = null;
+    }
+  }, [referenceImageUrl]);
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -168,6 +190,14 @@ export function Canvas() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(originX, originY, gridPixelW, gridPixelH);
 
+    // Renderiza Imagem de Referência / Calque no fundo da prancha
+    if (isReferenceOverlayActive && refImageElemRef.current) {
+      ctx.save();
+      ctx.globalAlpha = referenceOpacity;
+      ctx.drawImage(refImageElemRef.current, originX, originY, gridPixelW, gridPixelH);
+      ctx.restore();
+    }
+
     const platePinW = multiBoardConfig.pinsHorizontalPerBoard || 57;
     const platePinH = multiBoardConfig.pinsVerticalPerBoard || 57;
 
@@ -192,8 +222,11 @@ export function Canvas() {
           !highlightBeadCode || (cell.beadCode === highlightBeadCode && !cell.isEmpty);
 
         if (cell.isEmpty) {
-          ctx.fillStyle = '#f8fafc';
-          ctx.fillRect(cellX, cellY, currentCellSize, currentCellSize);
+          // No modo calque ativo, deixamos as células vazias transparentes para que a imagem apareça
+          if (!isReferenceOverlayActive || !refImageElemRef.current) {
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(cellX, cellY, currentCellSize, currentCellSize);
+          }
         } else {
           ctx.fillStyle = cell.hex;
           ctx.globalAlpha = isHighlighted ? 1.0 : 0.18;

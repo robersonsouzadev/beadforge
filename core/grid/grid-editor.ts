@@ -202,3 +202,98 @@ export function batchReplaceBead(
     cells: newCells,
   };
 }
+
+/**
+ * Espelha a grade horizontalmente (inverte esquerda/direita).
+ */
+export function flipGridHorizontal(grid: GridMatrix): GridMatrix {
+  const width = grid.width;
+  const newCells = grid.cells.map((rowArr, r) =>
+    [...rowArr].reverse().map((cell, c) => ({
+      ...cell,
+      row: r,
+      col: c,
+    }))
+  );
+
+  return {
+    ...grid,
+    cells: newCells,
+  };
+}
+
+/**
+ * Espelha a grade verticalmente (inverte topo/base).
+ */
+export function flipGridVertical(grid: GridMatrix): GridMatrix {
+  const height = grid.height;
+  const newCells = [...grid.cells].reverse().map((rowArr, r) =>
+    rowArr.map((cell, c) => ({
+      ...cell,
+      row: r,
+      col: c,
+    }))
+  );
+
+  return {
+    ...grid,
+    cells: newCells,
+  };
+}
+
+/**
+ * Rotaciona a grade 90 graus no sentido horário.
+ */
+export function rotateGrid90(grid: GridMatrix): GridMatrix {
+  const oldH = grid.height;
+  const oldW = grid.width;
+  const newH = oldW;
+  const newW = oldH;
+
+  const newCells: GridCell[][] = [];
+
+  for (let r = 0; r < newH; r++) {
+    const row: GridCell[] = [];
+    for (let c = 0; c < newW; c++) {
+      const srcCell = grid.cells[oldH - 1 - c][r];
+      row.push({
+        ...srcCell,
+        row: r,
+        col: c,
+      });
+    }
+    newCells.push(row);
+  }
+
+  return {
+    ...grid,
+    width: newW,
+    height: newH,
+    cells: newCells,
+  };
+}
+
+/**
+ * Limpa toda a grade (torna todas as células vazias).
+ */
+export function clearAllGrid(grid: GridMatrix): GridMatrix {
+  const newCells = grid.cells.map((rowArr, r) =>
+    rowArr.map((_, c) => ({
+      row: r,
+      col: c,
+      beadCode: '',
+      beadName: '',
+      hex: '#FFFFFF',
+      rgb: { r: 255, g: 255, b: 255 },
+      textColor: '#000000' as const,
+      isEmpty: true,
+    }))
+  );
+
+  return {
+    ...grid,
+    cells: newCells,
+    totalBeads: 0,
+  };
+}
+
