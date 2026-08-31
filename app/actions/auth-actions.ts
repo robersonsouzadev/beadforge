@@ -1,6 +1,6 @@
 'use server';
 
-import { db } from '@/db';
+import { db, ensureDbTables } from '@/db';
 import { user, account, subscription } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { isUserAdmin } from '@/lib/admin';
@@ -10,6 +10,8 @@ import { hashPassword } from 'better-auth/crypto';
  * Permite ao Administrador sincronizar/redefinir sua senha diretamente
  */
 export async function syncAdminCredentialsAction(email: string, password: string, name?: string) {
+  await ensureDbTables();
+
   const normalizedEmail = email.toLowerCase().trim();
 
   if (!isUserAdmin(normalizedEmail)) {
