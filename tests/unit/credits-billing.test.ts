@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CREDIT_PACKAGES } from '../../app/actions/billing';
+import { CREDIT_PACKAGES } from '../../config/credits';
 import { SUBSCRIPTION_PLANS } from '../../config/subscriptions';
 
 describe('Credits & Billing Packages', () => {

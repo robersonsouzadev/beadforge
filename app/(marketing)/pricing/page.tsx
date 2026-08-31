@@ -3,10 +3,9 @@
 import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptions';
+import { CREDIT_PACKAGES, CreditPackId } from '@/config/credits';
 import {
   createCheckoutSession,
-  CREDIT_PACKAGES,
-  CreditPackId,
   createCreditsCheckoutSession,
 } from '@/app/actions/billing';
 import { useTranslation } from '@/lib/i18n';
