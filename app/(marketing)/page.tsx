@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import { MaterialCostEstimatorSection } from '@/components/landing/MaterialCostEstimatorSection';
+import { CommunityLearningSection } from '@/components/landing/CommunityLearningSection';
 
 export default function LandingPage() {
   const { t, currency } = useTranslation();
@@ -170,6 +171,9 @@ export default function LandingPage() {
 
       {/* ── Seção Calculadora & Estimativa de Custos de Materiais ── */}
       <MaterialCostEstimatorSection />
+
+      {/* ── Seção Central de Aprendizado & Tutoriais da Comunidade ── */}
+      <CommunityLearningSection />
 
       {/* ── Pricing Preview Section ── */}
       <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
