@@ -257,6 +257,67 @@ export const aiGenerationLog = pgTable('ai_generation_log', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// ── Commerce & Affiliate Partner Tables ──
+
+export const affiliateMerchant = pgTable('affiliate_merchant', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(), // 'Shopee Brasil', 'Mercado Livre', 'Amazon Brasil'
+  slug: text('slug').notNull().unique(), // 'shopee', 'mercadolivre', 'amazon'
+  programType: text('program_type').notNull().default('shopee_affiliate'), // 'shopee_affiliate' | 'ml_affiliate' | 'amazon_associates' | 'direct_partner'
+  baseUrl: text('base_url'),
+  affiliateId: text('affiliate_id'),
+  commissionPct: numeric('commission_pct', { precision: 5, scale: 2 }).default('8.00'),
+  cookieDurationDays: integer('cookie_duration_days').default(7),
+  hasApi: boolean('has_api').default(false),
+  apiConfig: jsonb('api_config'),
+  isActive: boolean('is_active').notNull().default(true),
+  priority: integer('priority').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const affiliateProduct = pgTable('affiliate_product', {
+  id: text('id').primaryKey(),
+  merchantId: text('merchant_id')
+    .notNull()
+    .references(() => affiliateMerchant.id, { onDelete: 'cascade' }),
+  externalSku: text('external_sku'),
+  title: text('title').notNull(),
+  url: text('url').notNull(),
+  affiliateUrl: text('affiliate_url'),
+  brand: text('brand').notNull().default('pindoo'), // 'pindoo' | 'hama' | 'artkal' | 'perler' | 'generic'
+  beadSize: text('bead_size').notNull().default('2.6mm'), // '2.6mm' | '5.0mm'
+  colorCode: text('color_code'), // 'A1', 'H10', etc. (null se for kit)
+  colorHex: text('color_hex'),
+  quantityPerPack: integer('quantity_per_pack').notNull().default(1000),
+  priceBrl: numeric('price_brl', { precision: 10, scale: 2 }).notNull().default('14.90'),
+  pricePerBead: numeric('price_per_bead', { precision: 10, scale: 4 }).notNull().default('0.0149'),
+  rating: numeric('rating', { precision: 3, scale: 2 }).default('4.80'),
+  reviewCount: integer('review_count').default(120),
+  isAvailable: boolean('is_available').notNull().default(true),
+  productType: text('product_type').notNull().default('single_color'), // 'single_color' | 'kit' | 'accessory' | 'pegboard'
+  imageUrl: text('image_url'),
+  estimatedShippingDays: integer('estimated_shipping_days').default(5),
+  lastUpdatedAt: timestamp('last_updated_at').notNull().defaultNow(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const affiliateClick = pgTable('affiliate_click', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  productId: text('product_id')
+    .notNull()
+    .references(() => affiliateProduct.id, { onDelete: 'cascade' }),
+  projectId: text('project_id').references(() => project.id, { onDelete: 'set null' }),
+  colorCode: text('color_code'),
+  source: text('source').notNull().default('bom_panel'), // 'bom_panel' | 'shopping_modal' | 'inventory_alert' | 'gallery' | 'landing_page'
+  userAgent: text('user_agent'),
+  ipAddress: text('ip_address'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Subscription = typeof subscription.$inferSelect;
@@ -281,4 +342,11 @@ export type SystemConfig = typeof systemConfig.$inferSelect;
 export type NewSystemConfig = typeof systemConfig.$inferInsert;
 export type AiGenerationLog = typeof aiGenerationLog.$inferSelect;
 export type NewAiGenerationLog = typeof aiGenerationLog.$inferInsert;
+export type AffiliateMerchant = typeof affiliateMerchant.$inferSelect;
+export type NewAffiliateMerchant = typeof affiliateMerchant.$inferInsert;
+export type AffiliateProduct = typeof affiliateProduct.$inferSelect;
+export type NewAffiliateProduct = typeof affiliateProduct.$inferInsert;
+export type AffiliateClick = typeof affiliateClick.$inferSelect;
+export type NewAffiliateClick = typeof affiliateClick.$inferInsert;
+
 

@@ -246,6 +246,64 @@ export async function ensureDbTables() {
         "error_message" text,
         "created_at" timestamp DEFAULT now() NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS "affiliate_merchant" (
+        "id" text PRIMARY KEY NOT NULL,
+        "name" text NOT NULL,
+        "slug" text NOT NULL UNIQUE,
+        "program_type" text DEFAULT 'shopee_affiliate' NOT NULL,
+        "base_url" text,
+        "affiliate_id" text,
+        "commission_pct" numeric(5,2) DEFAULT '8.00',
+        "cookie_duration_days" integer DEFAULT 7,
+        "has_api" boolean DEFAULT false,
+        "api_config" jsonb,
+        "is_active" boolean DEFAULT true NOT NULL,
+        "priority" integer DEFAULT 0 NOT NULL,
+        "created_at" timestamp DEFAULT now() NOT NULL,
+        "updated_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS "affiliate_product" (
+        "id" text PRIMARY KEY NOT NULL,
+        "merchant_id" text NOT NULL REFERENCES "affiliate_merchant"("id") ON DELETE CASCADE,
+        "external_sku" text,
+        "title" text NOT NULL,
+        "url" text NOT NULL,
+        "affiliate_url" text,
+        "brand" text DEFAULT 'pindoo' NOT NULL,
+        "bead_size" text DEFAULT '2.6mm' NOT NULL,
+        "color_code" text,
+        "color_hex" text,
+        "quantity_per_pack" integer DEFAULT 1000 NOT NULL,
+        "price_brl" numeric(10,2) DEFAULT '14.90' NOT NULL,
+        "price_per_bead" numeric(10,4) DEFAULT '0.0149' NOT NULL,
+        "rating" numeric(3,2) DEFAULT '4.80',
+        "review_count" integer DEFAULT 120,
+        "is_available" boolean DEFAULT true NOT NULL,
+        "product_type" text DEFAULT 'single_color' NOT NULL,
+        "image_url" text,
+        "estimated_shipping_days" integer DEFAULT 5,
+        "last_updated_at" timestamp DEFAULT now() NOT NULL,
+        "is_active" boolean DEFAULT true NOT NULL,
+        "created_at" timestamp DEFAULT now() NOT NULL,
+        "updated_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS "affiliate_click" (
+        "id" text PRIMARY KEY NOT NULL,
+        "user_id" text REFERENCES "user"("id") ON DELETE SET NULL,
+        "product_id" text NOT NULL REFERENCES "affiliate_product"("id") ON DELETE CASCADE,
+        "project_id" text REFERENCES "project"("id") ON DELETE SET NULL,
+        "color_code" text,
+        "source" text DEFAULT 'bom_panel' NOT NULL,
+        "user_agent" text,
+        "ip_address" text,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS "idx_affiliate_prod_match" ON "affiliate_product"("brand", "color_code", "bead_size");
+      CREATE INDEX IF NOT EXISTS "idx_affiliate_click_prod" ON "affiliate_click"("product_id", "created_at");
     `);
     initialized = true;
     console.log('✅ PostgreSQL tables and columns verified/created.');

@@ -8,12 +8,14 @@ import {
   FileText,
   ShieldCheck,
   Sparkles,
+  ShoppingCart,
 } from 'lucide-react';
 import { AdminStats, AdminAiStats, AdminAiConfig } from '@/app/actions/admin';
 import { AdminAnalyticsCards } from '@/components/admin/AdminAnalyticsCards';
 import { AdminAiConfigTab } from '@/components/admin/AdminAiConfigTab';
 import { AdminUsersTable } from '@/components/AdminUsersTable';
 import { AdminAiLogsTable } from '@/components/admin/AdminAiLogsTable';
+import { AdminCommerceTab } from '@/components/admin/AdminCommerceTab';
 
 interface AdminDashboardClientProps {
   stats: AdminStats;
@@ -30,7 +32,7 @@ export function AdminDashboardClient({
   projects2DCount,
   projects3DCount,
 }: AdminDashboardClientProps) {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'ai_config' | 'users' | 'logs'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'commerce' | 'ai_config' | 'users' | 'logs'>('analytics');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 select-none">
@@ -104,6 +106,19 @@ export function AdminDashboardClient({
 
         <button
           type="button"
+          onClick={() => setActiveTab('commerce')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            activeTab === 'commerce'
+              ? 'bg-amber-400 text-zinc-950 shadow-md'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+          }`}
+        >
+          <ShoppingCart className="w-4 h-4" />
+          <span>Commerce & Afiliados (Shopee/ML)</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('logs')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
             activeTab === 'logs'
@@ -126,6 +141,12 @@ export function AdminDashboardClient({
             projects3DCount={projects3DCount}
           />
           <AdminUsersTable users={stats.users} />
+        </div>
+      )}
+
+      {activeTab === 'commerce' && (
+        <div className="animate-fade-in">
+          <AdminCommerceTab />
         </div>
       )}
 

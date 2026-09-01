@@ -13,6 +13,7 @@ import {
   Crown,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
+import { MaterialCostEstimatorSection } from '@/components/landing/MaterialCostEstimatorSection';
 
 export default function LandingPage() {
   const { t, currency } = useTranslation();
@@ -166,6 +167,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Seção Calculadora & Estimativa de Custos de Materiais ── */}
+      <MaterialCostEstimatorSection />
 
       {/* ── Pricing Preview Section ── */}
       <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -10,6 +10,7 @@ import {
   type BOMStockCheckResult,
 } from '@/app/actions/inventory';
 import { CostCalculatorModal } from '@/components/costs/CostCalculatorModal';
+import { ShoppingModal } from '@/components/commerce/ShoppingModal';
 import {
   Layers,
   Replace,
@@ -17,6 +18,7 @@ import {
   EyeOff,
   X,
   Calculator,
+  ShoppingCart,
   Boxes,
   CheckCircle2,
   AlertCircle,
@@ -33,6 +35,7 @@ export function ColorSummaryPanel({ onClose, isDrawer = false }: ColorSummaryPan
     summary,
     grid,
     projectName,
+    currentProjectId,
     selectedBead,
     setSelectedBead,
     activePalette,
@@ -47,6 +50,7 @@ export function ColorSummaryPanel({ onClose, isDrawer = false }: ColorSummaryPan
   const [replacingCode, setReplacingCode] = useState<string | null>(null);
   const [targetBead, setTargetBead] = useState<BeadColor | null>(null);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [stockCheck, setStockCheck] = useState<BOMStockCheckResult | null>(null);
   const [isDeducting, setIsDeducting] = useState(false);
   const [deductedSuccess, setDeductedSuccess] = useState(false);
@@ -144,14 +148,23 @@ export function ColorSummaryPanel({ onClose, isDrawer = false }: ColorSummaryPan
           </div>
         ) : (
           <div>
-            {/* Botão de Ação Rápida: Orçamento & Precificação */}
-            <div className="mb-3">
+            {/* Botões de Ação Rápida: Comprar Materiais & Orçamento */}
+            <div className="space-y-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setIsShoppingModalOpen(true)}
+                className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-zinc-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 transition active:scale-[0.98] border border-emerald-300/40"
+              >
+                <ShoppingCart className="w-4 h-4 text-zinc-950" />
+                <span>Comprar Materiais (Shopee / ML) 🛒</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsCalculatorOpen(true)}
-                className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-amber-500/10 hover:from-amber-500/30 hover:to-amber-400/20 border border-amber-400/40 text-amber-300 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-[0.98]"
+                className="w-full py-2 px-3 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-zinc-700 transition"
               >
-                <Calculator className="w-4 h-4 text-amber-400" />
+                <Calculator className="w-3.5 h-3.5 text-amber-400" />
                 <span>Calcular Custo & Orçamento 💰</span>
               </button>
             </div>
@@ -397,6 +410,15 @@ export function ColorSummaryPanel({ onClose, isDrawer = false }: ColorSummaryPan
         projectName={projectName || 'Molde de Beads'}
         totalBeads={grid?.totalBeads || 0}
         baseMaterialCostBrl={stockCheck?.estimatedMaterialCost || (grid?.totalBeads || 0) * 0.015}
+      />
+
+      {/* Modal Comprar Materiais (Afiliados Shopee / ML / Amazon) */}
+      <ShoppingModal
+        isOpen={isShoppingModalOpen}
+        onClose={() => setIsShoppingModalOpen(false)}
+        summary={summary}
+        projectName={projectName || 'Molde de Beads'}
+        projectId={currentProjectId || undefined}
       />
     </aside>
   );
