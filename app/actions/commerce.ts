@@ -882,7 +882,13 @@ export async function seedPopularBeadProductsAction() {
 
   let inserted = 0;
 
-  // 3. Cadastra o PRIMEIRO PRODUTO REAL DO MERCADO LIVRE (Kit 10.000 Beads 24 Cores - R$ 29,96)
+  // 3. Cadastra ou Atualiza o PRIMEIRO PRODUTO REAL DO MERCADO LIVRE (Kit 10.000 Beads 24 Cores - R$ 29,96)
+  const heroKitImg = 'https://http2.mlstatic.com/D_NQ_NP_2X_735870-MLB77568584488_072024-F.webp';
+  const kit15kImg = 'https://http2.mlstatic.com/D_NQ_NP_2X_728148-MLB78311545633_082024-F.webp';
+  const plateImg = 'https://http2.mlstatic.com/D_NQ_NP_2X_616853-MLB70724805728_072023-F.webp';
+  const paperImg = 'https://http2.mlstatic.com/D_NQ_NP_2X_899234-MLB52674261763_112022-F.webp';
+  const tweezerImg = 'https://http2.mlstatic.com/D_NQ_NP_2X_910793-MLB71790432170_092023-F.webp';
+
   const [existingMlHeroKit] = await db
     .select()
     .from(affiliateProduct)
@@ -917,13 +923,59 @@ export async function seedPopularBeadProductsAction() {
       badgeTag: 'best_value',
       estimatedCommissionPct: '12.00',
       priorityScore: 100, // Máxima prioridade
+      imageUrl: heroKitImg,
       estimatedShippingDays: 2,
       isActive: true,
     });
     inserted++;
+  } else if (!existingMlHeroKit.imageUrl) {
+    await db.update(affiliateProduct).set({ imageUrl: heroKitImg }).where(eq(affiliateProduct.id, existingMlHeroKit.id));
   }
 
-  // 4. Cadastra Kit Gigante 42.000 Beads 120 Cores (Opção Completa)
+  // 4. Cadastra Kit 15.000 Beads 24 Cores com Pinça e Pegboard (Kit Intermediário Completo)
+  const [existingMl15kKit] = await db
+    .select()
+    .from(affiliateProduct)
+    .where(and(eq(affiliateProduct.merchantId, ml.id), eq(affiliateProduct.title, 'Kit Perler Hama Beads 2,6mm 15.000un 24 Cores Pinça Pegboard')))
+    .limit(1);
+
+  if (!existingMl15kKit) {
+    await db.insert(affiliateProduct).values({
+      id: crypto.randomUUID(),
+      merchantId: ml.id,
+      categoryId: catMap.get('kits') || null,
+      externalSku: 'ML-KIT-15K-24C',
+      title: 'Kit Perler Hama Beads 2,6mm 15.000un 24 Cores Pinça Pegboard',
+      shortDescription: 'Kit completo com 24 cores, organizador, placas pegboards e acessórios.',
+      url: 'https://meli.la/2q4Xt3j',
+      affiliateUrl: 'https://meli.la/2q4Xt3j',
+      campaignTag: 'beadforgekits',
+      brand: 'generic',
+      beadSize: '2.6mm',
+      colorCode: null,
+      quantityPerPack: 15000,
+      colorCount: 24,
+      priceBrl: '72.13',
+      previousPriceBrl: '89.99',
+      pricePerBead: '0.0048',
+      priceVaries: true,
+      rating: '4.90',
+      reviewCount: 85,
+      isAvailable: true,
+      productType: 'multi_color_kit',
+      badgeTag: 'most_complete',
+      estimatedCommissionPct: '12.00',
+      priorityScore: 95,
+      imageUrl: kit15kImg,
+      estimatedShippingDays: 2,
+      isActive: true,
+    });
+    inserted++;
+  } else if (!existingMl15kKit.imageUrl) {
+    await db.update(affiliateProduct).set({ imageUrl: kit15kImg }).where(eq(affiliateProduct.id, existingMl15kKit.id));
+  }
+
+  // 5. Cadastra Kit Gigante 42.000 Beads 120 Cores (Opção Master)
   const [existingMlBigKit] = await db
     .select()
     .from(affiliateProduct)
@@ -957,13 +1009,16 @@ export async function seedPopularBeadProductsAction() {
       badgeTag: 'most_complete',
       estimatedCommissionPct: '12.00',
       priorityScore: 85,
+      imageUrl: heroKitImg,
       estimatedShippingDays: 3,
       isActive: true,
     });
     inserted++;
+  } else if (!existingMlBigKit.imageUrl) {
+    await db.update(affiliateProduct).set({ imageUrl: heroKitImg }).where(eq(affiliateProduct.id, existingMlBigKit.id));
   }
 
-  // 5. Cadastra Placa Pegboard Mini 57x57 pinos (14,5 x 14,5 cm)
+  // 6. Cadastra Placa Pegboard Mini 57x57 pinos (14,5 x 14,5 cm)
   const [existingPlate] = await db
     .select()
     .from(affiliateProduct)
@@ -997,13 +1052,16 @@ export async function seedPopularBeadProductsAction() {
       estimatedCommissionPct: '12.00',
       priorityScore: 90,
       specsJson: { pinsHorizontal: 57, pinsVertical: 57, widthCm: 14.5, heightCm: 14.5 },
+      imageUrl: plateImg,
       estimatedShippingDays: 2,
       isActive: true,
     });
     inserted++;
+  } else if (!existingPlate.imageUrl) {
+    await db.update(affiliateProduct).set({ imageUrl: plateImg }).where(eq(affiliateProduct.id, existingPlate.id));
   }
 
-  // 6. Cadastra Papel de Fusão e Pinça de Precisão
+  // 7. Cadastra Papel de Fusão e Pinça de Precisão
   const [existingPaper] = await db
     .select()
     .from(affiliateProduct)
@@ -1035,10 +1093,13 @@ export async function seedPopularBeadProductsAction() {
       badgeTag: 'essential_tool',
       estimatedCommissionPct: '12.00',
       priorityScore: 80,
+      imageUrl: paperImg,
       estimatedShippingDays: 2,
       isActive: true,
     });
     inserted++;
+  } else if (!existingPaper.imageUrl) {
+    await db.update(affiliateProduct).set({ imageUrl: paperImg }).where(eq(affiliateProduct.id, existingPaper.id));
   }
 
   const [existingTweezer] = await db
@@ -1072,10 +1133,13 @@ export async function seedPopularBeadProductsAction() {
       badgeTag: 'essential_tool',
       estimatedCommissionPct: '12.00',
       priorityScore: 80,
+      imageUrl: tweezerImg,
       estimatedShippingDays: 2,
       isActive: true,
     });
     inserted++;
+  } else if (!existingTweezer.imageUrl) {
+    await db.update(affiliateProduct).set({ imageUrl: tweezerImg }).where(eq(affiliateProduct.id, existingTweezer.id));
   }
 
   // 7. Cadastra Refis de Cores Populares 2,6mm

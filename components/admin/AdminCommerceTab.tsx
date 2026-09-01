@@ -749,9 +749,27 @@ export function AdminCommerceTab({
                     )}
                   </div>
 
-                  <h4 className="font-bold text-white text-xs line-clamp-2" title={p.title}>
-                    {p.title}
-                  </h4>
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 shrink-0 rounded-xl bg-zinc-950 border border-zinc-800 p-1 flex items-center justify-center overflow-hidden shadow-sm">
+                      {p.imageUrl ? (
+                        <img
+                          src={p.imageUrl}
+                          alt={p.title}
+                          className="w-full h-full object-contain rounded-lg"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <Package className="w-6 h-6 text-zinc-600" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-white text-xs line-clamp-2" title={p.title}>
+                        {p.title}
+                      </h4>
+                    </div>
+                  </div>
 
                   <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-850 space-y-1 text-[11px] font-mono">
                     <div className="flex justify-between">
@@ -1043,6 +1061,37 @@ export function AdminCommerceTab({
                     required
                   />
                 </div>
+              </div>
+
+              {/* URL da Imagem do Produto e Preview */}
+              <div>
+                <label className="block font-semibold text-zinc-300 mb-1">
+                  URL da Imagem do Produto (Mercado Livre / CDN / Web)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={pImageUrl}
+                    onChange={(e) => setPImageUrl(e.target.value)}
+                    placeholder="https://http2.mlstatic.com/D_NQ_NP_2X_...webp"
+                    className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400"
+                  />
+                  {pImageUrl && (
+                    <div className="w-10 h-10 shrink-0 rounded-xl bg-zinc-950 border border-zinc-700 p-0.5 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={pImageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-contain rounded-lg"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] text-zinc-500 mt-0.5 block">
+                  Dica: Você pode copiar o link da imagem do anúncio do Mercado Livre ou Shopee.
+                </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

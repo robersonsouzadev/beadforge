@@ -19,6 +19,7 @@ import {
   Wrench,
   Flame,
   ShieldCheck,
+  Image as ImageIcon,
 } from 'lucide-react';
 import {
   getRecommendedProductsForBOMAction,
@@ -190,7 +191,7 @@ export function ShoppingModal({
           ) : activeTab === 'kits' ? (
             /* ── ABA 1: KITS RECOMENDADOS ── */
             <div className="space-y-4">
-              {/* HERO CARD: MELHOR CUSTO-BENEFÍCIO */}
+              {/* HERO CARD: MELHOR CUSTO-BENEFÍCIO COM IMAGEM */}
               {data?.bestValueKit && (
                 <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-amber-950/30 border-2 border-amber-400/80 rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl relative overflow-hidden">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -221,13 +222,46 @@ export function ShoppingModal({
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-sm sm:text-base font-black text-white">
-                      {data.bestValueKit.product.title}
-                    </h3>
-                    <p className="text-xs text-zinc-300 mt-1">
-                      {data.bestValueKit.product.shortDescription || data.bestValueKit.reasonText}
-                    </p>
+                  {/* Corpo do Produto: Imagem + Detalhes */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
+                    {/* Imagem do Produto */}
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-2xl bg-zinc-950 border border-zinc-800 p-1.5 flex items-center justify-center overflow-hidden shadow-md">
+                      {data.bestValueKit.product.imageUrl ? (
+                        <img
+                          src={data.bestValueKit.product.imageUrl}
+                          alt={data.bestValueKit.product.title}
+                          className="w-full h-full object-contain rounded-xl"
+                          onError={(e) => {
+                            // Fallback caso a URL expire
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-xl bg-gradient-to-tr from-amber-500/10 to-yellow-500/10 border border-amber-500/20 flex flex-col items-center justify-center text-amber-400 p-2 text-center">
+                          <Package className="w-8 h-8 mb-1 opacity-80" />
+                          <span className="text-[9px] font-bold uppercase tracking-wider">Kit 2,6mm</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Título & Descrição */}
+                    <div className="flex-1 space-y-1.5 text-center sm:text-left">
+                      <h3 className="text-sm sm:text-base font-black text-white leading-snug">
+                        {data.bestValueKit.product.title}
+                      </h3>
+                      <p className="text-xs text-zinc-300">
+                        {data.bestValueKit.product.shortDescription || data.bestValueKit.reasonText}
+                      </p>
+                      <div className="flex items-center justify-center sm:justify-start gap-3 pt-1 text-[11px] text-zinc-400">
+                        <span className="flex items-center gap-1 text-amber-300 font-bold">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>{data.bestValueKit.product.rating.toFixed(1)}</span>
+                          <span className="text-zinc-500 font-normal">({data.bestValueKit.product.reviewCount})</span>
+                        </span>
+                        <span>&bull;</span>
+                        <span className="text-emerald-400 font-bold">Frete Rápido Brasil</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Especificações do Kit */}
@@ -262,7 +296,7 @@ export function ShoppingModal({
                 </div>
               )}
 
-              {/* KITS ALTERNATIVOS */}
+              {/* KITS ALTERNATIVOS COM IMAGENS */}
               {data?.alternativeKits && data.alternativeKits.length > 0 && (
                 <div className="space-y-3 pt-2">
                   <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -276,7 +310,7 @@ export function ShoppingModal({
                         key={item.product.id}
                         className="p-4 bg-zinc-950/70 border border-zinc-800 rounded-2xl flex flex-col justify-between space-y-3 hover:border-zinc-700 transition shadow-md"
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30">
                               {item.badge.label}
@@ -286,17 +320,36 @@ export function ShoppingModal({
                             </span>
                           </div>
 
-                          <h5 className="text-xs font-bold text-white line-clamp-2" title={item.product.title}>
-                            {item.product.title}
-                          </h5>
+                          <div className="flex gap-3 items-center">
+                            {/* Imagem do Kit Alternativo */}
+                            <div className="w-16 h-16 shrink-0 rounded-xl bg-zinc-900 border border-zinc-800 p-1 flex items-center justify-center overflow-hidden">
+                              {item.product.imageUrl ? (
+                                <img
+                                  src={item.product.imageUrl}
+                                  alt={item.product.title}
+                                  className="w-full h-full object-contain rounded-lg"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <Package className="w-6 h-6 text-zinc-600" />
+                              )}
+                            </div>
 
-                          <div className="flex items-baseline justify-between pt-1">
-                            <span className="text-lg font-black text-emerald-400 font-mono">
-                              R$ {item.product.priceBrl.toFixed(2)}
-                            </span>
-                            <span className="text-[11px] text-zinc-400 font-mono">
-                              {item.product.quantityPerPack.toLocaleString('pt-BR')} beads ({item.product.colorCount} cores)
-                            </span>
+                            <div className="min-w-0 flex-1">
+                              <h5 className="text-xs font-bold text-white line-clamp-2" title={item.product.title}>
+                                {item.product.title}
+                              </h5>
+                              <div className="flex items-baseline justify-between pt-1">
+                                <span className="text-base font-black text-emerald-400 font-mono">
+                                  R$ {item.product.priceBrl.toFixed(2)}
+                                </span>
+                                <span className="text-[10px] text-zinc-400 font-mono">
+                                  {item.product.quantityPerPack.toLocaleString('pt-BR')} un
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
@@ -315,7 +368,7 @@ export function ShoppingModal({
               )}
             </div>
           ) : activeTab === 'pegboards' ? (
-            /* ── ABA 2: PLACAS & ACESSÓRIOS ── */
+            /* ── ABA 2: PLACAS & ACESSÓRIOS COM IMAGENS ── */
             <div className="space-y-4">
               {/* Placa Necessária para o Projeto */}
               <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-4 space-y-3">
@@ -344,9 +397,18 @@ export function ShoppingModal({
                         key={p.id}
                         className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between text-xs"
                       >
-                        <div className="min-w-0 pr-2">
-                          <p className="font-semibold text-white truncate">{p.title}</p>
-                          <p className="text-emerald-400 font-mono font-bold">R$ {p.priceBrl.toFixed(2)}</p>
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <div className="w-10 h-10 shrink-0 rounded-lg bg-zinc-950 border border-zinc-800 p-0.5 flex items-center justify-center overflow-hidden">
+                            {p.imageUrl ? (
+                              <img src={p.imageUrl} alt={p.title} className="w-full h-full object-contain rounded" />
+                            ) : (
+                              <Grid className="w-4 h-4 text-zinc-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white truncate">{p.title}</p>
+                            <p className="text-emerald-400 font-mono font-bold">R$ {p.priceBrl.toFixed(2)}</p>
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -388,15 +450,26 @@ export function ShoppingModal({
                       key={acc.id}
                       className="p-3.5 bg-zinc-950/70 border border-zinc-800 rounded-2xl flex flex-col justify-between space-y-2.5"
                     >
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase">
-                          {acc.productType === 'ironing_paper' ? 'Fusão / Passar' : 'Ferramenta'}
-                        </span>
-                        <h5 className="text-xs font-bold text-white line-clamp-1">{acc.title}</h5>
-                        <p className="text-[11px] text-zinc-400 line-clamp-1">{acc.shortDescription}</p>
-                        <p className="text-sm font-bold text-emerald-400 font-mono pt-1">
-                          R$ {acc.priceBrl.toFixed(2)}
-                        </p>
+                      <div className="flex gap-3 items-center">
+                        <div className="w-12 h-12 shrink-0 rounded-xl bg-zinc-900 border border-zinc-800 p-1 flex items-center justify-center overflow-hidden">
+                          {acc.imageUrl ? (
+                            <img src={acc.imageUrl} alt={acc.title} className="w-full h-full object-contain rounded-lg" />
+                          ) : acc.productType === 'ironing_paper' ? (
+                            <Flame className="w-5 h-5 text-amber-400" />
+                          ) : (
+                            <Wrench className="w-5 h-5 text-sky-400" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase block">
+                            {acc.productType === 'ironing_paper' ? 'Fusão / Passar' : 'Ferramenta'}
+                          </span>
+                          <h5 className="text-xs font-bold text-white line-clamp-1">{acc.title}</h5>
+                          <p className="text-xs font-bold text-emerald-400 font-mono">
+                            R$ {acc.priceBrl.toFixed(2)}
+                          </p>
+                        </div>
                       </div>
 
                       <button
