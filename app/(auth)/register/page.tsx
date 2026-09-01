@@ -184,18 +184,71 @@ function RegisterForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-sm font-bold rounded-xl shadow-lg shadow-amber-500/20 transition duration-150 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-sm font-bold rounded-xl shadow-lg shadow-amber-500/20 transition duration-150 disabled:opacity-50 cursor-pointer active:scale-[0.99]"
         >
           {isLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <>
-              <span>Criar Conta Gratuita</span>
+              <span>Criar Conta com Email</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}
         </button>
       </form>
+
+      {/* Divider */}
+      <div className="relative my-2">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-zinc-800" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-zinc-900 px-2.5 text-zinc-500 font-medium">ou</span>
+        </div>
+      </div>
+
+      {/* Google Sign Up Button */}
+      <button
+        type="button"
+        onClick={async () => {
+          if (!acceptedTerms) {
+            setErrorMessage('Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar uma conta.');
+            return;
+          }
+          setIsLoading(true);
+          try {
+            await signIn.social({
+              provider: 'google',
+              callbackURL: redirectUrl,
+            });
+          } catch (err: any) {
+            setErrorMessage(err.message || 'Falha ao conectar com o Google.');
+            setIsLoading(false);
+          }
+        }}
+        disabled={isLoading}
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-zinc-950 hover:bg-zinc-850 text-zinc-200 hover:text-white text-xs sm:text-sm font-semibold rounded-xl border border-zinc-800 hover:border-zinc-700 transition shadow-sm disabled:opacity-50 cursor-pointer"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24">
+          <path
+            fill="#EA4335"
+            d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"
+          />
+          <path
+            fill="#4285F4"
+            d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
+          />
+          <path
+            fill="#FBBC05"
+            d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12 0 14.5s.7 4.8 1.9 7.2l3.7-2.9z"
+          />
+          <path
+            fill="#34A853"
+            d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"
+          />
+        </svg>
+        <span>Cadastrar com Google</span>
+      </button>
 
       {/* Switch to Login */}
       <div className="pt-2 text-center text-xs text-zinc-400 border-t border-zinc-800/60">
