@@ -45,7 +45,7 @@ export function ImageTo3DModal() {
   const [bgTolerance, setBgTolerance] = useState<number>(30);
 
   const [beadSize, setBeadSize] = useState<'mini' | 'midi'>('mini');
-  const [finishedScale, setFinishedScale] = useState<'small' | 'medium' | 'large'>('medium');
+  const [finishedScale, setFinishedScale] = useState<'small' | 'medium' | 'large' | 'ultra'>('large');
   const [isGenerating, setIsGenerating] = useState(false);
   const [stepStatus, setStepStatus] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -156,14 +156,16 @@ export function ImageTo3DModal() {
       // Configuração de resolução baseada no tamanho escolhido
       const dims =
         finishedScale === 'small'
-          ? { w: 24, h: 24, d: 18 }
+          ? { w: 28, h: 28, d: 20 }
           : finishedScale === 'medium'
-          ? { w: 32, h: 32, d: 26 }
-          : { w: 42, h: 42, d: 36 };
+          ? { w: 38, h: 38, d: 28 }
+          : finishedScale === 'large'
+          ? { w: 48, h: 48, d: 36 }
+          : { w: 56, h: 56, d: 44 }; // Ultra Studio (24.000+ beads)
 
       const pitchMm = beadSize === 'mini' ? 2.6 : 5.0;
 
-      // Cria a imagem para amostragem de pixels local
+      // Cria a imagem para amostragem de pixels local em alta definição
       const img = new Image();
       img.src = data.imageDataUri || currentActivePreview!;
       await new Promise((resolve) => {
@@ -174,13 +176,15 @@ export function ImageTo3DModal() {
       canvas.width = dims.w;
       canvas.height = dims.h;
       const ctx = canvas.getContext('2d')!;
+      // Desativa suavização excessiva para manter nitidez dos olhos e detalhes finos
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, dims.w, dims.h);
       const imgData = ctx.getImageData(0, 0, dims.w, dims.h);
 
       const rawVoxels: Array<{ x: number; y: number; z: number; rgb: { r: number; g: number; b: number } }> = [];
 
-      // Extrusão volumétrica inteligente com suavização cilíndrica / elipsoidal 3D
-      // Processa SOMENTE pixels com opacidade (sem o fundo branco/transparente)
+      // Escaneamento de silhueta e profundidade estrutural
       for (let y = 0; y < dims.h; y++) {
         for (let x = 0; x < dims.w; x++) {
           const idx = (y * dims.w + x) * 4;
@@ -196,18 +200,26 @@ export function ImageTo3DModal() {
               continue;
             }
 
-            // Calcula espessura volumétrica baseada na distância do centro da silhueta
+            // Calcula relevo volumétrico com mapeamento de profundidade anatômica
             const normX = (x / dims.w - 0.5) * 2;
             const normY = (y / dims.h - 0.5) * 2;
             const distCenter = Math.sqrt(normX * normX + normY * normY);
-            const maxZLayers = Math.max(2, Math.round((1 - Math.min(0.9, distCenter * 0.7)) * dims.d));
+
+            // Luminância para realçar detalhes faciais (olhos, boca, roupas)
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            const featureRelief = (1.0 - Math.abs(luminance - 0.5) * 0.4);
+
+            const maxZLayers = Math.max(
+              3,
+              Math.round((1 - Math.min(0.85, distCenter * 0.65)) * dims.d * featureRelief)
+            );
 
             const startZ = Math.floor((dims.d - maxZLayers) / 2);
             const endZ = startZ + maxZLayers;
 
             for (let z = startZ; z < endZ; z++) {
               // Variação suave de iluminação por camada Z para realçar o relevo 3D
-              const depthFactor = 1.0 - Math.abs(z - dims.d / 2) / (dims.d / 2) * 0.2;
+              const depthFactor = 1.0 - (Math.abs(z - dims.d / 2) / (dims.d / 2)) * 0.15;
               rawVoxels.push({
                 x,
                 y,
@@ -425,21 +437,21 @@ export function ImageTo3DModal() {
 
             <div>
               <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
-                Nível de Detalhe / Altura
+                Nível de Detalhe / Resolução 3D
               </label>
-              <div className="grid grid-cols-3 gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
-                {(['small', 'medium', 'large'] as const).map((s) => (
+              <div className="grid grid-cols-4 gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
+                {(['small', 'medium', 'large', 'ultra'] as const).map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setFinishedScale(s)}
-                    className={`py-1.5 px-1 rounded-lg text-xs font-semibold transition capitalize ${
+                    className={`py-1.5 px-0.5 rounded-lg text-[11px] font-semibold transition text-center capitalize ${
                       finishedScale === s
                         ? 'bg-amber-400 text-zinc-950 font-bold shadow-sm'
                         : 'text-zinc-400 hover:text-zinc-200'
                     }`}
                   >
-                    {s === 'small' ? 'Pequeno' : s === 'medium' ? 'Médio' : 'Grande'}
+                    {s === 'small' ? '28×28' : s === 'medium' ? '38×38' : s === 'large' ? '48×48' : 'Ultra 56²'}
                   </button>
                 ))}
               </div>

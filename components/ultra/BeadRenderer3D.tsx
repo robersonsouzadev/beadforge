@@ -63,12 +63,33 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
     return list;
   }, [grid3D, showAllLayers3D, activeLayerZ, explodedSpacing]);
 
-  // Geometria autêntica do Bead (Cilindro com topo chanfrado sutil)
+  // Geometria autêntica do Bead (Tubo vazado com furo central e chanfro suave realista)
   const beadGeometry = useMemo(() => {
     const pitch = grid3D?.pitchMm || 2.6;
-    const radius = pitch * 0.48;
-    const height = pitch * 0.96;
-    return new THREE.CylinderGeometry(radius, radius, height, 16);
+    const outerR = pitch * 0.46;
+    const innerR = pitch * 0.22;
+    const height = pitch * 0.92;
+
+    const shape = new THREE.Shape();
+    shape.absarc(0, 0, outerR, 0, Math.PI * 2, false);
+
+    const holePath = new THREE.Path();
+    holePath.absarc(0, 0, innerR, 0, Math.PI * 2, true);
+    shape.holes.push(holePath);
+
+    const extrudeSettings: THREE.ExtrudeGeometryOptions = {
+      depth: height,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: pitch * 0.025,
+      bevelThickness: pitch * 0.025,
+      curveSegments: 16,
+    };
+
+    const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geom.center(); // Centraliza o pivô do bead
+    return geom;
   }, [grid3D?.pitchMm]);
 
   // Atualização direta de matrizes e cores na GPU

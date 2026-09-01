@@ -349,6 +349,36 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
               />
             </div>
           </div>
+
+          {/* Atalhos Rápidos de Densidade / Resolução */}
+          <div className="pt-1">
+            <span className="text-[10px] text-zinc-500 font-medium block mb-1.5">Predefinições de Alta Definição:</span>
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { label: '28×28', w: 28, h: 28, d: 20 },
+                { label: '38×38', w: 38, h: 38, d: 28 },
+                { label: '48×48', w: 48, h: 48, d: 36 },
+                { label: 'Ultra 56²', w: 56, h: 56, d: 44 },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => {
+                    setTargetWidth(p.w);
+                    setTargetHeight(p.h);
+                    setTargetDepth(p.d);
+                  }}
+                  className={`py-1 px-1 rounded-md text-[10px] font-semibold transition border ${
+                    targetWidth === p.w && targetHeight === p.h && targetDepth === p.d
+                      ? 'bg-amber-400 border-amber-400 text-zinc-950 font-bold'
+                      : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Tipo de Preenchimento: Sólido vs Oco */}
