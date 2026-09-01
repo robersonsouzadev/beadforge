@@ -117,7 +117,7 @@ export default function LegalHubPage() {
           </div>
 
           <a
-            href="mailto:contato@hamabeadsbrasil.com.br?subject=Solicita%C3%A7%C3%A3o%20LGPD%20-%20BeadForge%20Studio"
+            href="mailto:hamabeadbrasil@gmail.com?subject=Solicita%C3%A7%C3%A3o%20LGPD%20-%20BeadForge%20Studio"
             className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs sm:text-sm font-bold rounded-xl shadow-lg transition flex items-center gap-2 shrink-0"
           >
             <Mail className="w-4 h-4" />

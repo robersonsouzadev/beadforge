@@ -112,7 +112,7 @@ export default function CreatorProfileSettingsPage() {
     const body = encodeURIComponent(
       `Olá equipe de privacidade do BeadForge Studio,\n\nSolicito a eliminação definitiva da minha conta e de todos os dados pessoais e projetos associados, nos termos do Artigo 18, inciso VI da LGPD.\n\nPerfil: @${handle || 'usuario'}\nNome: ${displayName || 'Usuário'}`
     );
-    window.location.href = `mailto:contato@hamabeadsbrasil.com.br?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:hamabeadbrasil@gmail.com?subject=${subject}&body=${body}`;
   };
 
   if (isLoading) {
