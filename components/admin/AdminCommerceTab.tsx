@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ShoppingCart,
   Plus,
@@ -44,6 +45,7 @@ export function AdminCommerceTab({
   initialProducts = [],
   initialMetrics = null,
 }: AdminCommerceTabProps = {}) {
+  const router = useRouter();
   const [subTab, setSubTab] = useState<'metrics' | 'merchants' | 'products'>('metrics');
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -92,7 +94,6 @@ export function AdminCommerceTab({
   const [pProductType, setPProductType] = useState('single_color');
 
   const loadData = async () => {
-    setIsLoading(true);
     try {
       const [mRes, pRes, metricsRes] = await Promise.all([
         listMerchantsAction(),
@@ -104,14 +105,14 @@ export function AdminCommerceTab({
       setMetrics(metricsRes);
     } catch (err) {
       console.error('Erro ao carregar dados de commerce:', err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (initialMerchants?.length) setMerchants(initialMerchants);
+    if (initialProducts?.length) setProducts(initialProducts);
+    if (initialMetrics) setMetrics(initialMetrics);
+  }, [initialMerchants, initialProducts, initialMetrics]);
 
   const handleOpenMerchantModal = (merchant?: MerchantDTO) => {
     if (merchant) {
@@ -154,8 +155,8 @@ export function AdminCommerceTab({
           isActive: mIsActive,
         });
         setIsMerchantModalOpen(false);
-        alert('Parceiro salvo com sucesso!');
         await loadData();
+        router.refresh();
       } catch (err: any) {
         alert(err.message || 'Erro ao salvar parceiro.');
       }
@@ -164,12 +165,19 @@ export function AdminCommerceTab({
 
   const handleDeleteMerchant = async (id: string, name: string) => {
     if (!confirm(`Deseja excluir o parceiro "${name}" e todos os seus produtos associados?`)) return;
+    
+    // Atualização otimista imediata na UI
+    setMerchants((prev) => prev.filter((m) => m.id !== id));
+    setProducts((prev) => prev.filter((p) => p.merchantId !== id));
+
     startTransition(async () => {
       try {
         await deleteMerchantAction(id);
         await loadData();
+        router.refresh();
       } catch (err: any) {
         alert(err.message || 'Erro ao excluir parceiro.');
+        await loadData();
       }
     });
   };
@@ -243,8 +251,8 @@ export function AdminCommerceTab({
           productType: pProductType,
         });
         setIsProductModalOpen(false);
-        alert('Produto salvo com sucesso!');
         await loadData();
+        router.refresh();
       } catch (err: any) {
         alert(err.message || 'Erro ao salvar produto.');
       }
@@ -253,25 +261,35 @@ export function AdminCommerceTab({
 
   const handleDeleteProduct = async (id: string, title: string) => {
     if (!confirm(`Deseja excluir o produto "${title}"?`)) return;
+
+    // Atualização otimista imediata na UI
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+
     startTransition(async () => {
       try {
         await deleteProductAction(id);
         await loadData();
+        router.refresh();
       } catch (err: any) {
         alert(err.message || 'Erro ao excluir produto.');
+        await loadData();
       }
     });
   };
 
   const handleSeedPopular = async () => {
     if (!confirm('Deseja semear o catálogo inicial com os Marketplaces (Shopee, ML, Amazon) e 30 cores populares?')) return;
+    setIsLoading(true);
     startTransition(async () => {
       try {
         const res = await seedPopularBeadProductsAction();
         alert(`Sucesso! ${res.insertedCount} produtos populares foram adicionados ao catálogo.`);
         await loadData();
+        router.refresh();
       } catch (err: any) {
         alert(err.message || 'Erro ao semear catálogo.');
+      } finally {
+        setIsLoading(false);
       }
     });
   };
