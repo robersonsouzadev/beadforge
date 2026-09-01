@@ -18,6 +18,8 @@ import {
   ExternalLink,
   ArrowLeft,
   ShieldCheck,
+  Download,
+  Trash2,
 } from 'lucide-react';
 
 export default function CreatorProfileSettingsPage() {
@@ -77,6 +79,40 @@ export default function CreatorProfileSettingsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleExportUserData = () => {
+    const dataToExport = {
+      exportDate: new Date().toISOString(),
+      service: 'BeadForge Studio',
+      legalFramework: 'LGPD (Lei 13.709/2018 - Art. 18, V)',
+      profile: {
+        handle,
+        displayName,
+        bio,
+        shopUrl,
+        instagramHandle,
+        whatsappNumber,
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `beadforge-dados-perfil-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteAccountRequest = () => {
+    const subject = encodeURIComponent('Solicitação de Exclusão de Conta e Dados (LGPD Art. 18)');
+    const body = encodeURIComponent(
+      `Olá equipe de privacidade do BeadForge Studio,\n\nSolicito a eliminação definitiva da minha conta e de todos os dados pessoais e projetos associados, nos termos do Artigo 18, inciso VI da LGPD.\n\nPerfil: @${handle || 'usuario'}\nNome: ${displayName || 'Usuário'}`
+    );
+    window.location.href = `mailto:contato@hamabeadsbrasil.com.br?subject=${subject}&body=${body}`;
   };
 
   if (isLoading) {
@@ -293,6 +329,57 @@ export default function CreatorProfileSettingsPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Seção de Governança & Direitos do Titular (LGPD Art. 18) ── */}
+      <div className="p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Privacidade & Seus Dados (LGPD)</h3>
+            <p className="text-xs text-zinc-400">
+              Gerencie seus dados pessoais e exerça seus direitos garantidos pela Lei nº 13.709/2018.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-800/80 text-xs">
+          <div className="flex items-center gap-4 text-zinc-400">
+            <Link href="/privacy" target="_blank" className="hover:text-amber-400 underline transition">
+              Política de Privacidade
+            </Link>
+            <Link href="/terms" target="_blank" className="hover:text-amber-400 underline transition">
+              Termos de Uso
+            </Link>
+            <Link href="/cookies" target="_blank" className="hover:text-amber-400 underline transition">
+              Cookies
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportUserData}
+              className="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-white rounded-xl font-semibold transition flex items-center gap-1.5 border border-zinc-700"
+              title="Baixar cópia de dados cadastrais (Art. 18, V)"
+            >
+              <Download className="w-3.5 h-3.5 text-amber-400" />
+              <span>Exportar Dados (JSON)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDeleteAccountRequest}
+              className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-semibold transition flex items-center gap-1.5"
+              title="Solicitar exclusão definitiva da conta e dados (Art. 18, VI)"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Excluir Conta & Dados</span>
+            </button>
           </div>
         </div>
       </div>

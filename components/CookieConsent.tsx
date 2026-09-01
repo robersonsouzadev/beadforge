@@ -62,12 +62,21 @@ export function CookieConsent() {
         </p>
 
         <div className="flex items-center justify-between gap-2 pt-1">
-          <Link
-            href="/legal"
-            className="text-[11px] text-zinc-400 hover:text-amber-400 underline transition"
-          >
-            Termos & LGPD
-          </Link>
+          <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+            <Link
+              href="/privacy"
+              className="hover:text-amber-400 underline transition"
+            >
+              Privacidade (LGPD)
+            </Link>
+            <span>&bull;</span>
+            <Link
+              href="/cookies"
+              className="hover:text-amber-400 underline transition"
+            >
+              Cookies
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <button

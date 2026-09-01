@@ -15,6 +15,7 @@ function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -22,6 +23,12 @@ function RegisterForm() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
+
+    if (!acceptedTerms) {
+      setErrorMessage('Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar uma conta.');
+      setIsLoading(false);
+      return;
+    }
 
     if (password.length < 6) {
       setErrorMessage('A senha deve ter pelo menos 6 caracteres.');
@@ -144,6 +151,34 @@ function RegisterForm() {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+        </div>
+
+        {/* Termo de Aceite LGPD */}
+        <div className="pt-1">
+          <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer group select-none">
+            <div
+              onClick={() => setAcceptedTerms(!acceptedTerms)}
+              className={`w-4 h-4 rounded-md flex items-center justify-center border shrink-0 mt-0.5 transition ${
+                acceptedTerms
+                  ? 'bg-amber-400 border-amber-400 text-zinc-950 shadow-sm'
+                  : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'
+              }`}
+            >
+              <svg className="w-3 h-3 stroke-current" viewBox="0 0 24 24" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <span className="leading-snug">
+              Declaro que li e concordo com os{' '}
+              <Link href="/terms" target="_blank" className="text-amber-400 hover:underline font-semibold">
+                Termos de Uso
+              </Link>{' '}
+              e com a{' '}
+              <Link href="/privacy" target="_blank" className="text-amber-400 hover:underline font-semibold">
+                Política de Privacidade (LGPD)
+              </Link>.
+            </span>
+          </label>
         </div>
 
         <button

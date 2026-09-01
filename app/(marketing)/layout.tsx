@@ -72,8 +72,25 @@ export default function MarketingLayout({
                 BeadForge Studio
               </span>
             </div>
-            <p className="text-xs text-zinc-400 text-center sm:text-right">
-              &copy; {new Date().getFullYear()} BeadForge Studio &bull; O sistema de produção para arte em Beads.
+
+            {/* Legal & Privacy Links */}
+            <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-400">
+              <Link href="/terms" className="hover:text-amber-400 transition">
+                Termos de Uso
+              </Link>
+              <Link href="/privacy" className="hover:text-amber-400 transition">
+                Privacidade & LGPD
+              </Link>
+              <Link href="/cookies" className="hover:text-amber-400 transition">
+                Política de Cookies
+              </Link>
+              <Link href="/legal" className="hover:text-amber-400 transition">
+                Central Legal
+              </Link>
+            </div>
+
+            <p className="text-xs text-zinc-500 text-center sm:text-right">
+              &copy; {new Date().getFullYear()} BeadForge Studio &bull; Todos os direitos reservados.
             </p>
           </div>
 

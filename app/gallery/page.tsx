@@ -333,8 +333,17 @@ export default function GalleryPage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-zinc-800/80 bg-zinc-950 py-6 px-4 text-center text-xs text-zinc-500 space-y-2">
+      <footer className="border-t border-zinc-800/80 bg-zinc-950 py-8 px-4 text-center text-xs text-zinc-500 space-y-3">
         <p>BeadForge Studio &bull; A maior comunidade brasileira de artesãos em Fuse Beads</p>
+        <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-zinc-400">
+          <Link href="/terms" className="hover:text-amber-400 transition">Termos de Uso</Link>
+          <span>&bull;</span>
+          <Link href="/privacy" className="hover:text-amber-400 transition">Privacidade & LGPD</Link>
+          <span>&bull;</span>
+          <Link href="/cookies" className="hover:text-amber-400 transition">Cookies</Link>
+          <span>&bull;</span>
+          <Link href="/legal" className="hover:text-amber-400 transition">Central Legal</Link>
+        </div>
       </footer>
     </div>
   );
