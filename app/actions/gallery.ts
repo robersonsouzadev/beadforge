@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { galleryPattern, creatorProfile, user, project } from '@/db/schema';
 import { eq, and, desc, sql, ilike, or } from 'drizzle-orm';
+import { generateThumbnailFromGrid, generateThumbnailFromGrid3D } from '@/lib/thumbnail';
 
 export interface GalleryPatternDTO {
   id: string;
@@ -32,6 +33,28 @@ export interface GalleryPatternDTO {
 export interface PatternDetailsDTO extends GalleryPatternDTO {
   patternData: any;
   createdAt: Date;
+}
+
+export function resolvePatternThumbnail(thumbnailUrl?: string | null, patternData?: any): string | null {
+  if (thumbnailUrl && typeof thumbnailUrl === 'string' && thumbnailUrl.trim().length > 0) {
+    return thumbnailUrl;
+  }
+  if (!patternData) return null;
+
+  const data = patternData as any;
+  if (data.grid && data.grid.cells && data.grid.cells.length > 0) {
+    return generateThumbnailFromGrid(data.grid);
+  }
+  if (data.grid3D && data.grid3D.layers && data.grid3D.layers.length > 0) {
+    return generateThumbnailFromGrid3D(data.grid3D);
+  }
+  if (data.originalImage && typeof data.originalImage === 'string' && data.originalImage.startsWith('data:image')) {
+    return data.originalImage;
+  }
+  if (data.imageBase64 && typeof data.imageBase64 === 'string' && data.imageBase64.startsWith('data:image')) {
+    return data.imageBase64;
+  }
+  return null;
 }
 
 function generateSlug(title: string): string {
@@ -94,27 +117,39 @@ export async function getGalleryPatternsAction(options?: {
 
   const results = await query.limit(limit);
 
-  return results.map(({ pattern: p, user: u, profile: cp }) => ({
-    id: p.id,
-    slug: p.slug,
-    title: p.title,
-    description: p.description,
-    category: p.category,
-    thumbnailUrl: p.thumbnailUrl,
-    beadCount: p.beadCount,
-    colorCount: p.colorCount,
-    paletteName: p.paletteName,
-    dimensions: p.dimensions,
-    likesCount: p.likesCount,
-    remixCount: p.remixCount,
-    isValidated3D: p.isValidated3D,
-    publishedAt: p.publishedAt,
-    creator: {
-      name: cp?.displayName || u.name || 'Criador BeadForge',
-      handle: cp?.handle || null,
-      avatarUrl: cp?.avatarUrl || u.image || null,
-    },
-  }));
+  return results.map(({ pattern: p, user: u, profile: cp }) => {
+    const thumb = resolvePatternThumbnail(p.thumbnailUrl, p.patternData);
+
+    // Auto-backfill do thumbnail no banco se estava vazio
+    if (!p.thumbnailUrl && thumb) {
+      db.update(galleryPattern)
+        .set({ thumbnailUrl: thumb })
+        .where(eq(galleryPattern.id, p.id))
+        .catch(console.warn);
+    }
+
+    return {
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      category: p.category,
+      thumbnailUrl: thumb,
+      beadCount: p.beadCount,
+      colorCount: p.colorCount,
+      paletteName: p.paletteName,
+      dimensions: p.dimensions,
+      likesCount: p.likesCount,
+      remixCount: p.remixCount,
+      isValidated3D: p.isValidated3D,
+      publishedAt: p.publishedAt,
+      creator: {
+        name: cp?.displayName || u.name || 'Criador BeadForge',
+        handle: cp?.handle || null,
+        avatarUrl: cp?.avatarUrl || u.image || null,
+      },
+    };
+  });
 }
 
 export async function getPatternBySlugAction(
@@ -137,6 +172,14 @@ export async function getPatternBySlugAction(
   }
 
   const { pattern: p, user: u, profile: cp } = result;
+  const thumb = resolvePatternThumbnail(p.thumbnailUrl, p.patternData);
+
+  if (!p.thumbnailUrl && thumb) {
+    db.update(galleryPattern)
+      .set({ thumbnailUrl: thumb })
+      .where(eq(galleryPattern.id, p.id))
+      .catch(console.warn);
+  }
 
   return {
     id: p.id,
@@ -144,7 +187,7 @@ export async function getPatternBySlugAction(
     title: p.title,
     description: p.description,
     category: p.category,
-    thumbnailUrl: p.thumbnailUrl,
+    thumbnailUrl: thumb,
     patternData: p.patternData,
     beadCount: p.beadCount,
     colorCount: p.colorCount,
@@ -192,13 +235,15 @@ export async function publishPatternToGalleryAction(
   const projData = proj.data as any;
   const summary = projData?.summary || [];
   const grid = projData?.grid;
+  const grid3D = projData?.grid3D;
 
   const beadCount =
     grid?.totalBeads ||
     summary.reduce((acc: number, item: any) => acc + (item.count || 0), 0);
   const colorCount = summary.length;
-  const dimensions = grid ? `${grid.width}x${grid.height}` : '29x29';
+  const dimensions = grid ? `${grid.width}x${grid.height}` : (grid3D ? `${grid3D.width}x${grid3D.height}x${grid3D.depth}` : '29x29');
   const paletteName = projData?.activePaletteId || 'Pindoo Standard';
+  const resolvedThumb = resolvePatternThumbnail(proj.thumbnail, proj.data);
 
   // Check if already published
   const [existing] = await db
@@ -219,7 +264,7 @@ export async function publishPatternToGalleryAction(
         title: data.title.trim() || existing.title,
         description: data.description?.trim() || existing.description,
         category: data.category || existing.category,
-        thumbnailUrl: proj.thumbnail || existing.thumbnailUrl,
+        thumbnailUrl: resolvedThumb || existing.thumbnailUrl,
         patternData: proj.data,
         beadCount,
         colorCount,
@@ -246,7 +291,7 @@ export async function publishPatternToGalleryAction(
     title: data.title.trim() || proj.name,
     description: data.description?.trim() || null,
     category: data.category || 'geek',
-    thumbnailUrl: proj.thumbnail,
+    thumbnailUrl: resolvedThumb,
     patternData: proj.data,
     beadCount,
     colorCount,

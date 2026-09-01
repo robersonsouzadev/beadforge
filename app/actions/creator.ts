@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { creatorProfile, galleryPattern, user } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import type { GalleryPatternDTO } from './gallery';
+import { resolvePatternThumbnail, type GalleryPatternDTO } from './gallery';
 
 export interface CreatorFullProfileDTO {
   id: string;
@@ -60,13 +60,15 @@ export async function getCreatorProfileByHandleAction(
   let totalLikes = 0;
   const patterns: GalleryPatternDTO[] = rawPatterns.map((p) => {
     totalLikes += p.likesCount || 0;
+    const thumb = resolvePatternThumbnail(p.thumbnailUrl, p.patternData);
+
     return {
       id: p.id,
       slug: p.slug,
       title: p.title,
       description: p.description,
       category: p.category,
-      thumbnailUrl: p.thumbnailUrl,
+      thumbnailUrl: thumb,
       beadCount: p.beadCount,
       colorCount: p.colorCount,
       paletteName: p.paletteName,
