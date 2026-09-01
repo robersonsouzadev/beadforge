@@ -41,6 +41,8 @@ export const auth = betterAuth({
       : {}),
   },
   session: {
+    expiresIn: 60 * 60 * 24 * 90, // 90 dias de sessão ativa persistente (Permanecer Conectado)
+    updateAge: 60 * 60 * 24, // atualiza o token a cada 24 horas em background
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60, // 5 minutes
