@@ -184,16 +184,16 @@ export default function PublicApprovalPage({ params }: ApprovalPageProps) {
         {/* Visual Preview Canvas */}
         <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 sm:p-8 flex flex-col items-center justify-center space-y-4 shadow-2xl relative overflow-hidden">
           {data.thumbnailUrl ? (
-            <div className="relative max-w-full max-h-[420px] flex items-center justify-center p-4 bg-zinc-950/90 rounded-2xl border border-zinc-800/80 shadow-inner">
+            <div className="relative max-w-full max-h-[440px] flex items-center justify-center p-4 bg-zinc-950/90 rounded-2xl border border-zinc-800/80 shadow-inner">
               <img
                 src={data.thumbnailUrl}
                 alt={data.orderTitle}
-                className="max-h-[380px] w-auto object-contain rounded-lg drop-shadow-xl"
+                className="max-h-[400px] w-auto object-contain rounded-lg drop-shadow-2xl [image-rendering:pixelated]"
               />
             </div>
           ) : (
             <div className="h-64 flex flex-col items-center justify-center text-zinc-600 gap-2">
-              <Layers className="w-10 h-10 opacity-40" />
+              <Layers className="w-10 h-10 opacity-40 text-amber-400/50" />
               <span className="text-xs">Pré-visualização do padrão indisponível</span>
             </div>
           )}

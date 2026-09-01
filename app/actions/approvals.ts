@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { approval, order, project, user, client } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { generateThumbnailFromGrid, generateThumbnailFromGrid3D } from '@/lib/thumbnail';
 
 export interface PublicApprovalDTO {
   token: string;
@@ -55,7 +56,7 @@ export async function createApprovalAction(orderId: string) {
     totalBeads: 0,
     colorCount: 0,
     dimensions: '29x29',
-    colors: [],
+    colors: [] as Array<{ code: string; name: string; hex: string; count: number }>,
   };
   let thumbnailUrl: string | null = null;
 
@@ -71,16 +72,25 @@ export async function createApprovalAction(orderId: string) {
       const projData = proj.data as any;
       const summary = projData?.summary || [];
       const grid = projData?.grid;
+      const grid3D = projData?.grid3D;
+
+      if (!thumbnailUrl) {
+        if (grid) {
+          thumbnailUrl = generateThumbnailFromGrid(grid);
+        } else if (grid3D) {
+          thumbnailUrl = generateThumbnailFromGrid3D(grid3D);
+        }
+      }
 
       patternSnapshot = {
         totalBeads: grid?.totalBeads || summary.reduce((a: number, b: any) => a + (b.count || 0), 0),
         colorCount: summary.length,
-        dimensions: grid ? `${grid.width}x${grid.height}` : '29x29',
+        dimensions: grid ? `${grid.width}x${grid.height}` : (grid3D ? `${grid3D.width}x${grid3D.height} (${grid3D.layers?.length || 1} cam)` : '29x29'),
         colors: summary.map((s: any) => ({
-          code: s.code,
-          name: s.name,
-          hex: s.hex,
-          count: s.count,
+          code: s.code || s.beadCode || '',
+          name: s.name || s.colorName || '',
+          hex: s.hex || s.colorHex || '#000000',
+          count: s.count || s.quantity || 0,
         })),
       };
     }
@@ -99,7 +109,7 @@ export async function createApprovalAction(orderId: string) {
       .update(approval)
       .set({
         patternSnapshot,
-        thumbnailUrl,
+        thumbnailUrl: thumbnailUrl || existingApproval.thumbnailUrl,
         status: 'pending',
       })
       .where(eq(approval.id, existingApproval.id));
@@ -162,7 +172,47 @@ export async function getPublicApprovalAction(
     return null;
   }
 
-  const snapshot = app.approval.patternSnapshot as any;
+  let thumbnailUrl = app.approval.thumbnailUrl;
+  let snapshot = app.approval.patternSnapshot as any;
+
+  // Fallback: se o thumbnail ou snapshot estiver vazio, busca do projeto original
+  if ((!thumbnailUrl || !snapshot || !snapshot.colors || snapshot.colors.length === 0) && app.order.projectId) {
+    const [proj] = await db
+      .select()
+      .from(project)
+      .where(eq(project.id, app.order.projectId))
+      .limit(1);
+
+    if (proj) {
+      const projData = proj.data as any;
+      if (!thumbnailUrl) {
+        if (proj.thumbnail) {
+          thumbnailUrl = proj.thumbnail;
+        } else if (projData?.grid) {
+          thumbnailUrl = generateThumbnailFromGrid(projData.grid);
+        } else if (projData?.grid3D) {
+          thumbnailUrl = generateThumbnailFromGrid3D(projData.grid3D);
+        }
+      }
+
+      if (!snapshot || !snapshot.colors || snapshot.colors.length === 0) {
+        const summary = projData?.summary || [];
+        const grid = projData?.grid;
+        const grid3D = projData?.grid3D;
+        snapshot = {
+          totalBeads: grid?.totalBeads || summary.reduce((a: number, b: any) => a + (b.count || 0), 0),
+          colorCount: summary.length,
+          dimensions: grid ? `${grid.width}x${grid.height}` : (grid3D ? `${grid3D.width}x${grid3D.height}` : '29x29'),
+          colors: summary.map((s: any) => ({
+            code: s.code || s.beadCode || '',
+            name: s.name || s.colorName || '',
+            hex: s.hex || s.colorHex || '#000000',
+            count: s.count || s.quantity || 0,
+          })),
+        };
+      }
+    }
+  }
 
   return {
     token: app.approval.token,
@@ -170,7 +220,7 @@ export async function getPublicApprovalAction(
     projectName: app.order.title,
     sellerName: app.user.name || 'Ateliê de Beads',
     status: app.approval.status as 'pending' | 'approved' | 'revision_requested',
-    thumbnailUrl: app.approval.thumbnailUrl,
+    thumbnailUrl: thumbnailUrl,
     patternSnapshot: snapshot || { totalBeads: 0, colorCount: 0, dimensions: '', colors: [] },
     clientComment: app.approval.clientComment,
     respondedAt: app.approval.respondedAt,
