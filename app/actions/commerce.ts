@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
-import { db } from '@/db';
+import { db, ensureDbTables } from '@/db';
 import { affiliateMerchant, affiliateProduct, affiliateClick, user } from '@/db/schema';
 import { eq, desc, and, sql, ilike } from 'drizzle-orm';
 import { isUserAdmin } from '@/lib/admin';
@@ -86,12 +86,20 @@ export interface CommerceMetricsDTO {
 // ── Helper: Admin Verification ──
 
 async function requireAdmin() {
+  await ensureDbTables();
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.user || !isUserAdmin(session.user.email)) {
-    throw new Error('Acesso negado. Apenas administradores podem gerenciar o catálogo de commerce.');
+  if (!session?.user) {
+    throw new Error('Você precisa estar autenticado para realizar esta ação.');
+  }
+
+  const email = session.user.email?.toLowerCase().trim();
+  const isAdmin = isUserAdmin(email) || (session.user as any).role === 'admin';
+
+  if (!isAdmin) {
+    throw new Error(`Acesso negado (${email}). Apenas administradores podem gerenciar o catálogo de commerce.`);
   }
 
   return session.user;
@@ -100,36 +108,42 @@ async function requireAdmin() {
 // ── Merchant Actions ──
 
 export async function listMerchantsAction(): Promise<MerchantDTO[]> {
-  const rows = await db
-    .select({
-      merchant: affiliateMerchant,
-      productCount: sql<number>`count(${affiliateProduct.id})::int`,
-    })
-    .from(affiliateMerchant)
-    .leftJoin(affiliateProduct, eq(affiliateMerchant.id, affiliateProduct.merchantId))
-    .groupBy(affiliateMerchant.id)
-    .orderBy(desc(affiliateMerchant.priority), affiliateMerchant.name);
+  await ensureDbTables();
+  try {
+    const rows = await db
+      .select({
+        merchant: affiliateMerchant,
+        productCount: sql<number>`count(${affiliateProduct.id})::int`,
+      })
+      .from(affiliateMerchant)
+      .leftJoin(affiliateProduct, eq(affiliateMerchant.id, affiliateProduct.merchantId))
+      .groupBy(affiliateMerchant.id)
+      .orderBy(desc(affiliateMerchant.priority), affiliateMerchant.name);
 
-  return rows.map((r) => ({
-    id: r.merchant.id,
-    name: r.merchant.name,
-    slug: r.merchant.slug,
-    programType: r.merchant.programType,
-    baseUrl: r.merchant.baseUrl,
-    affiliateId: r.merchant.affiliateId,
-    commissionPct: Number(r.merchant.commissionPct || 8),
-    cookieDurationDays: r.merchant.cookieDurationDays || 7,
-    hasApi: r.merchant.hasApi || false,
-    isActive: r.merchant.isActive,
-    priority: r.merchant.priority,
-    productCount: r.productCount || 0,
-  }));
+    return rows.map((r) => ({
+      id: r.merchant.id,
+      name: r.merchant.name,
+      slug: r.merchant.slug,
+      programType: r.merchant.programType,
+      baseUrl: r.merchant.baseUrl,
+      affiliateId: r.merchant.affiliateId,
+      commissionPct: Number(r.merchant.commissionPct || 8),
+      cookieDurationDays: r.merchant.cookieDurationDays || 7,
+      hasApi: r.merchant.hasApi || false,
+      isActive: r.merchant.isActive,
+      priority: r.merchant.priority,
+      productCount: r.productCount || 0,
+    }));
+  } catch (err: any) {
+    console.error('Erro em listMerchantsAction:', err);
+    return [];
+  }
 }
 
 export async function saveMerchantAction(data: {
   id?: string;
   name: string;
-  slug: string;
+  slug?: string;
   programType: string;
   baseUrl?: string;
   affiliateId?: string;
@@ -140,10 +154,14 @@ export async function saveMerchantAction(data: {
 }) {
   await requireAdmin();
 
+  const name = data.name.trim();
+  const rawSlug = data.slug?.trim() || name;
+  const slug = rawSlug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'merchant';
   const id = data.id || crypto.randomUUID();
+
   const values = {
-    name: data.name.trim(),
-    slug: data.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+    name,
+    slug,
     programType: data.programType,
     baseUrl: data.baseUrl?.trim() || null,
     affiliateId: data.affiliateId?.trim() || null,
@@ -157,6 +175,18 @@ export async function saveMerchantAction(data: {
   if (data.id) {
     await db.update(affiliateMerchant).set(values).where(eq(affiliateMerchant.id, data.id));
   } else {
+    const [existing] = await db
+      .select()
+      .from(affiliateMerchant)
+      .where(eq(affiliateMerchant.slug, slug))
+      .limit(1);
+
+    if (existing) {
+      await db.update(affiliateMerchant).set(values).where(eq(affiliateMerchant.id, existing.id));
+      revalidatePath('/admin/commerce');
+      return { success: true, id: existing.id };
+    }
+
     await db.insert(affiliateMerchant).values({
       id,
       ...values,
@@ -184,6 +214,7 @@ export async function listProductsAction(params?: {
   search?: string;
   limit?: number;
 }): Promise<ProductDTO[]> {
+  await ensureDbTables();
   const limit = params?.limit || 200;
 
   const conditions = [];
@@ -196,42 +227,47 @@ export async function listProductsAction(params?: {
     );
   }
 
-  const rows = await db
-    .select({
-      product: affiliateProduct,
-      merchantName: affiliateMerchant.name,
-      merchantSlug: affiliateMerchant.slug,
-    })
-    .from(affiliateProduct)
-    .innerJoin(affiliateMerchant, eq(affiliateProduct.merchantId, affiliateMerchant.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(affiliateProduct.isActive), affiliateProduct.colorCode, affiliateProduct.title)
-    .limit(limit);
+  try {
+    const rows = await db
+      .select({
+        product: affiliateProduct,
+        merchantName: affiliateMerchant.name,
+        merchantSlug: affiliateMerchant.slug,
+      })
+      .from(affiliateProduct)
+      .innerJoin(affiliateMerchant, eq(affiliateProduct.merchantId, affiliateMerchant.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(affiliateProduct.isActive), affiliateProduct.colorCode, affiliateProduct.title)
+      .limit(limit);
 
-  return rows.map((r) => ({
-    id: r.product.id,
-    merchantId: r.product.merchantId,
-    merchantName: r.merchantName,
-    merchantSlug: r.merchantSlug,
-    externalSku: r.product.externalSku,
-    title: r.product.title,
-    url: r.product.url,
-    affiliateUrl: r.product.affiliateUrl || r.product.url,
-    brand: r.product.brand,
-    beadSize: r.product.beadSize,
-    colorCode: r.product.colorCode,
-    colorHex: r.product.colorHex,
-    quantityPerPack: r.product.quantityPerPack,
-    priceBrl: Number(r.product.priceBrl),
-    pricePerBead: Number(r.product.pricePerBead),
-    rating: Number(r.product.rating || 4.8),
-    reviewCount: r.product.reviewCount || 0,
-    isAvailable: r.product.isAvailable,
-    productType: r.product.productType,
-    imageUrl: r.product.imageUrl,
-    estimatedShippingDays: r.product.estimatedShippingDays || 5,
-    isActive: r.product.isActive,
-  }));
+    return rows.map((r) => ({
+      id: r.product.id,
+      merchantId: r.product.merchantId,
+      merchantName: r.merchantName,
+      merchantSlug: r.merchantSlug,
+      externalSku: r.product.externalSku,
+      title: r.product.title,
+      url: r.product.url,
+      affiliateUrl: r.product.affiliateUrl || r.product.url,
+      brand: r.product.brand,
+      beadSize: r.product.beadSize,
+      colorCode: r.product.colorCode,
+      colorHex: r.product.colorHex,
+      quantityPerPack: r.product.quantityPerPack,
+      priceBrl: Number(r.product.priceBrl),
+      pricePerBead: Number(r.product.pricePerBead),
+      rating: Number(r.product.rating || 4.8),
+      reviewCount: r.product.reviewCount || 0,
+      isAvailable: r.product.isAvailable,
+      productType: r.product.productType,
+      imageUrl: r.product.imageUrl,
+      estimatedShippingDays: r.product.estimatedShippingDays || 5,
+      isActive: r.product.isActive,
+    }));
+  } catch (err: any) {
+    console.error('Erro em listProductsAction:', err);
+    return [];
+  }
 }
 
 export async function saveProductAction(data: {
@@ -257,8 +293,8 @@ export async function saveProductAction(data: {
   await requireAdmin();
 
   const id = data.id || crypto.randomUUID();
-  const qty = Math.max(1, data.quantityPerPack || 1000);
-  const price = Math.max(0.01, data.priceBrl);
+  const qty = Math.max(1, isNaN(Number(data.quantityPerPack)) ? 1000 : Number(data.quantityPerPack));
+  const price = Math.max(0.01, isNaN(Number(data.priceBrl)) ? 14.90 : Number(data.priceBrl));
   const pricePerBead = Number((price / qty).toFixed(4));
 
   const values = {
@@ -267,8 +303,8 @@ export async function saveProductAction(data: {
     title: data.title.trim(),
     url: data.url.trim(),
     affiliateUrl: data.affiliateUrl?.trim() || data.url.trim(),
-    brand: data.brand.trim().toLowerCase(),
-    beadSize: data.beadSize.trim(),
+    brand: data.brand.trim().toLowerCase() || 'pindoo',
+    beadSize: data.beadSize.trim() || '2.6mm',
     colorCode: data.colorCode ? data.colorCode.trim().toUpperCase() : null,
     colorHex: data.colorHex?.trim() || null,
     quantityPerPack: qty,

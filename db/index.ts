@@ -17,9 +17,8 @@ export const db = drizzle(client, { schema });
 export { schema, client as rawClient };
 
 // Auto-create and migrate tables on first request at runtime
-let initialized = false;
 export async function ensureDbTables() {
-  if (initialized || process.env.NEXT_PHASE === 'phase-production-build') return;
+  if (process.env.NEXT_PHASE === 'phase-production-build') return;
   try {
     await client.unsafe(`
       CREATE TABLE IF NOT EXISTS "user" (
@@ -305,7 +304,6 @@ export async function ensureDbTables() {
       CREATE INDEX IF NOT EXISTS "idx_affiliate_prod_match" ON "affiliate_product"("brand", "color_code", "bead_size");
       CREATE INDEX IF NOT EXISTS "idx_affiliate_click_prod" ON "affiliate_click"("product_id", "created_at");
     `);
-    initialized = true;
     console.log('✅ PostgreSQL tables and columns verified/created.');
   } catch (err: any) {
     console.error('DB check note:', err?.message || err);
