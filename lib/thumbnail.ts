@@ -171,5 +171,46 @@ export async function createProjectThumbnail(options: {
     if (thumb3D) return thumb3D;
   }
 
+  // 4. Return undefined if no visual data
   return undefined;
+}
+
+/**
+ * Resolves a pattern thumbnail from an existing URL or pattern JSON data.
+ */
+export function resolvePatternThumbnail(thumbnailUrl?: string | null, patternData?: any): string | null {
+  if (thumbnailUrl && typeof thumbnailUrl === 'string' && thumbnailUrl.trim().length > 0) {
+    if (thumbnailUrl.startsWith('data:image/svg+xml;utf8,')) {
+      try {
+        const rawSvg = decodeURIComponent(thumbnailUrl.replace('data:image/svg+xml;utf8,', ''));
+        return svgToDataUri(rawSvg);
+      } catch {
+        return thumbnailUrl;
+      }
+    }
+    return thumbnailUrl;
+  }
+  if (!patternData) return null;
+
+  const data = patternData as any;
+  const grid = data.grid || data.projectData?.grid;
+  const grid3D = data.grid3D || data.projectData?.grid3D;
+  const originalImage = data.originalImage || data.projectData?.originalImage;
+  const imageBase64 = data.imageBase64 || data.projectData?.imageBase64;
+
+  if (grid && grid.cells && grid.cells.length > 0) {
+    const thumb = generateThumbnailFromGrid(grid);
+    if (thumb) return thumb;
+  }
+  if (grid3D && grid3D.layers && grid3D.layers.length > 0) {
+    const thumb3D = generateThumbnailFromGrid3D(grid3D);
+    if (thumb3D) return thumb3D;
+  }
+  if (originalImage && typeof originalImage === 'string' && originalImage.startsWith('data:image')) {
+    return originalImage;
+  }
+  if (imageBase64 && typeof imageBase64 === 'string' && imageBase64.startsWith('data:image')) {
+    return imageBase64;
+  }
+  return null;
 }

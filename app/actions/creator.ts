@@ -6,7 +6,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { creatorProfile, galleryPattern, user } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { resolvePatternThumbnail, type GalleryPatternDTO } from './gallery';
+import { type GalleryPatternDTO } from './gallery';
+import { resolvePatternThumbnail } from '@/lib/thumbnail';
 
 export interface CreatorFullProfileDTO {
   id: string;

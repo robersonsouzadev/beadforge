@@ -261,17 +261,31 @@ export const aiGenerationLog = pgTable('ai_generation_log', {
 
 export const affiliateMerchant = pgTable('affiliate_merchant', {
   id: text('id').primaryKey(),
-  name: text('name').notNull(), // 'Shopee Brasil', 'Mercado Livre', 'Amazon Brasil'
-  slug: text('slug').notNull().unique(), // 'shopee', 'mercadolivre', 'amazon'
-  programType: text('program_type').notNull().default('shopee_affiliate'), // 'shopee_affiliate' | 'ml_affiliate' | 'amazon_associates' | 'direct_partner'
+  name: text('name').notNull(), // 'Mercado Livre', 'Shopee Brasil', 'Amazon Brasil'
+  slug: text('slug').notNull().unique(), // 'mercadolivre', 'shopee', 'amazon'
+  programType: text('program_type').notNull().default('ml_affiliate'), // 'ml_affiliate' | 'shopee_affiliate' | 'amazon_associates' | 'direct_partner'
   baseUrl: text('base_url'),
   affiliateId: text('affiliate_id'),
-  commissionPct: numeric('commission_pct', { precision: 5, scale: 2 }).default('8.00'),
-  cookieDurationDays: integer('cookie_duration_days').default(7),
+  defaultCampaignTag: text('default_campaign_tag').default('beadforgekits'),
+  commissionPct: numeric('commission_pct', { precision: 5, scale: 2 }).default('12.00'),
+  cookieDurationDays: integer('cookie_duration_days').default(1),
   hasApi: boolean('has_api').default(false),
   apiConfig: jsonb('api_config'),
   isActive: boolean('is_active').notNull().default(true),
-  priority: integer('priority').notNull().default(0),
+  priority: integer('priority').notNull().default(10),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const affiliateCategory = pgTable('affiliate_category', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(), // 'Beads', 'Placas / Pegboards', 'Ferramentas', 'Fusão', 'Organização', 'Kits'
+  slug: text('slug').notNull().unique(), // 'beads', 'pegboards', 'ferramentas', 'fusao', 'organizacao', 'kits'
+  parentId: text('parent_id'),
+  description: text('description'),
+  icon: text('icon').default('Package'),
+  displayOrder: integer('display_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -281,27 +295,54 @@ export const affiliateProduct = pgTable('affiliate_product', {
   merchantId: text('merchant_id')
     .notNull()
     .references(() => affiliateMerchant.id, { onDelete: 'cascade' }),
-  externalSku: text('external_sku'),
+  categoryId: text('category_id').references(() => affiliateCategory.id, { onDelete: 'set null' }),
+  externalSku: text('external_sku'), // Ex: '7SVEU4-S4TM' ou 'MLB123456789'
   title: text('title').notNull(),
+  shortDescription: text('short_description'),
   url: text('url').notNull(),
   affiliateUrl: text('affiliate_url'),
-  brand: text('brand').notNull().default('pindoo'), // 'pindoo' | 'hama' | 'artkal' | 'perler' | 'generic'
+  campaignTag: text('campaign_tag').default('beadforgekits'),
+  brand: text('brand').notNull().default('generic'), // 'hama' | 'artkal' | 'pindoo' | 'perler' | 'generic'
   beadSize: text('bead_size').notNull().default('2.6mm'), // '2.6mm' | '5.0mm'
-  colorCode: text('color_code'), // 'A1', 'H10', etc. (null se for kit)
+  colorCode: text('color_code'), // 'A1', 'H10', etc. (null se for kit multicolorido)
   colorHex: text('color_hex'),
-  quantityPerPack: integer('quantity_per_pack').notNull().default(1000),
-  priceBrl: numeric('price_brl', { precision: 10, scale: 2 }).notNull().default('14.90'),
-  pricePerBead: numeric('price_per_bead', { precision: 10, scale: 4 }).notNull().default('0.0149'),
-  rating: numeric('rating', { precision: 3, scale: 2 }).default('4.80'),
-  reviewCount: integer('review_count').default(120),
+  quantityPerPack: integer('quantity_per_pack').notNull().default(10000), // Total beads
+  colorCount: integer('color_count').notNull().default(1), // Total de cores no kit (ex: 24, 120)
+  priceBrl: numeric('price_brl', { precision: 10, scale: 2 }).notNull().default('29.96'),
+  previousPriceBrl: numeric('previous_price_brl', { precision: 10, scale: 2 }),
+  pricePerBead: numeric('price_per_bead', { precision: 10, scale: 4 }).notNull().default('0.0030'),
+  priceVaries: boolean('price_varies').notNull().default(false), // "Preço sujeito a alteração / Ver no Mercado Livre"
+  priceLastCheckedAt: timestamp('price_last_checked_at').notNull().defaultNow(),
+  currency: text('currency').notNull().default('BRL'),
+  rating: numeric('rating', { precision: 3, scale: 2 }).default('4.85'),
+  reviewCount: integer('review_count').default(140),
+  sellerName: text('seller_name'),
   isAvailable: boolean('is_available').notNull().default(true),
-  productType: text('product_type').notNull().default('single_color'), // 'single_color' | 'kit' | 'accessory' | 'pegboard'
+  productType: text('product_type').notNull().default('multi_color_kit'), 
+  // 'multi_color_kit' | 'single_color' | 'pegboard' | 'tool' | 'ironing_paper' | 'storage' | 'starter_kit'
+  badgeTag: text('badge_tag'), // 'best_value' | 'most_complete' | 'high_volume' | 'essential_tool' | 'recommended'
+  estimatedCommissionPct: numeric('estimated_commission_pct', { precision: 5, scale: 2 }).default('12.00'),
+  priorityScore: integer('priority_score').notNull().default(10),
+  specsJson: jsonb('specs_json'), // Atributos técnicos adicionais (ex: dimensões de placa 57x57)
   imageUrl: text('image_url'),
-  estimatedShippingDays: integer('estimated_shipping_days').default(5),
+  estimatedShippingDays: integer('estimated_shipping_days').default(3),
   lastUpdatedAt: timestamp('last_updated_at').notNull().defaultNow(),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const affiliateProductColor = pgTable('affiliate_product_color', {
+  id: text('id').primaryKey(),
+  productId: text('product_id')
+    .notNull()
+    .references(() => affiliateProduct.id, { onDelete: 'cascade' }),
+  internalColorCode: text('internal_color_code').notNull(), // 'A1', 'H10', etc.
+  brandColorCode: text('brand_color_code'),
+  colorName: text('color_name').notNull(),
+  colorHex: text('color_hex').notNull(),
+  estimatedQuantity: integer('estimated_quantity').default(400),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 export const affiliateClick = pgTable('affiliate_click', {
@@ -310,11 +351,26 @@ export const affiliateClick = pgTable('affiliate_click', {
   productId: text('product_id')
     .notNull()
     .references(() => affiliateProduct.id, { onDelete: 'cascade' }),
+  merchantId: text('merchant_id').references(() => affiliateMerchant.id, { onDelete: 'set null' }),
   projectId: text('project_id').references(() => project.id, { onDelete: 'set null' }),
   colorCode: text('color_code'),
-  source: text('source').notNull().default('bom_panel'), // 'bom_panel' | 'shopping_modal' | 'inventory_alert' | 'gallery' | 'landing_page'
+  source: text('source').notNull().default('shopping_modal'), 
+  // 'shopping_modal' | 'bom_panel' | 'export_pdf' | 'inventory_alert' | 'materials_hub'
+  campaignTag: text('campaign_tag').default('beadforgekits'),
   userAgent: text('user_agent'),
   ipAddress: text('ip_address'),
+  referrer: text('referrer'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export const affiliateEvent = pgTable('affiliate_event', {
+  id: text('id').primaryKey(),
+  eventType: text('event_type').notNull(), // 'impression' | 'click' | 'modal_open' | 'redirect' | 'conversion'
+  userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+  productId: text('product_id').references(() => affiliateProduct.id, { onDelete: 'cascade' }),
+  projectId: text('project_id').references(() => project.id, { onDelete: 'set null' }),
+  source: text('source').notNull().default('shopping_modal'),
+  metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -344,9 +400,15 @@ export type AiGenerationLog = typeof aiGenerationLog.$inferSelect;
 export type NewAiGenerationLog = typeof aiGenerationLog.$inferInsert;
 export type AffiliateMerchant = typeof affiliateMerchant.$inferSelect;
 export type NewAffiliateMerchant = typeof affiliateMerchant.$inferInsert;
+export type AffiliateCategory = typeof affiliateCategory.$inferSelect;
+export type NewAffiliateCategory = typeof affiliateCategory.$inferInsert;
 export type AffiliateProduct = typeof affiliateProduct.$inferSelect;
 export type NewAffiliateProduct = typeof affiliateProduct.$inferInsert;
+export type AffiliateProductColor = typeof affiliateProductColor.$inferSelect;
+export type NewAffiliateProductColor = typeof affiliateProductColor.$inferInsert;
 export type AffiliateClick = typeof affiliateClick.$inferSelect;
 export type NewAffiliateClick = typeof affiliateClick.$inferInsert;
+export type AffiliateEvent = typeof affiliateEvent.$inferSelect;
+export type NewAffiliateEvent = typeof affiliateEvent.$inferInsert;
 
 

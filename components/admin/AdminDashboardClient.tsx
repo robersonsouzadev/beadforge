@@ -16,7 +16,7 @@ import { AdminAiConfigTab } from '@/components/admin/AdminAiConfigTab';
 import { AdminUsersTable } from '@/components/AdminUsersTable';
 import { AdminAiLogsTable } from '@/components/admin/AdminAiLogsTable';
 import { AdminCommerceTab } from '@/components/admin/AdminCommerceTab';
-import type { MerchantDTO, ProductDTO, CommerceMetricsDTO } from '@/app/actions/commerce';
+import type { MerchantDTO, CategoryDTO, ProductDTO, CommerceMetricsDTO } from '@/app/actions/commerce';
 
 interface AdminDashboardClientProps {
   stats: AdminStats;
@@ -25,6 +25,7 @@ interface AdminDashboardClientProps {
   projects2DCount: number;
   projects3DCount: number;
   initialMerchants?: MerchantDTO[];
+  initialCategories?: CategoryDTO[];
   initialProducts?: ProductDTO[];
   initialMetrics?: CommerceMetricsDTO | null;
 }
@@ -36,6 +37,7 @@ export function AdminDashboardClient({
   projects2DCount,
   projects3DCount,
   initialMerchants = [],
+  initialCategories = [],
   initialProducts = [],
   initialMetrics = null,
 }: AdminDashboardClientProps) {
@@ -155,6 +157,7 @@ export function AdminDashboardClient({
         <div className="animate-fade-in">
           <AdminCommerceTab
             initialMerchants={initialMerchants}
+            initialCategories={initialCategories}
             initialProducts={initialProducts}
             initialMetrics={initialMetrics}
           />

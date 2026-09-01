@@ -153,10 +153,10 @@ export function ColorSummaryPanel({ onClose, isDrawer = false }: ColorSummaryPan
               <button
                 type="button"
                 onClick={() => setIsShoppingModalOpen(true)}
-                className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-zinc-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 transition active:scale-[0.98] border border-emerald-300/40"
+                className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-500 via-emerald-400 to-amber-400 hover:from-emerald-400 hover:to-amber-300 text-zinc-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15 transition active:scale-[0.98] border border-emerald-300/40 cursor-pointer"
               >
                 <ShoppingCart className="w-4 h-4 text-zinc-950" />
-                <span>Comprar Materiais (Shopee / ML) 🛒</span>
+                <span>Comprar Materiais (Mercado Livre) 🛒</span>
               </button>
 
               <button
@@ -412,13 +412,15 @@ export function ColorSummaryPanel({ onClose, isDrawer = false }: ColorSummaryPan
         baseMaterialCostBrl={stockCheck?.estimatedMaterialCost || (grid?.totalBeads || 0) * 0.015}
       />
 
-      {/* Modal Comprar Materiais (Afiliados Shopee / ML / Amazon) */}
+      {/* Modal Comprar Materiais (Afiliados Mercado Livre / Shopee / Amazon) */}
       <ShoppingModal
         isOpen={isShoppingModalOpen}
         onClose={() => setIsShoppingModalOpen(false)}
         summary={summary}
         projectName={projectName || 'Molde de Beads'}
         projectId={currentProjectId || undefined}
+        gridWidth={grid?.width || 57}
+        gridHeight={grid?.height || 57}
       />
     </aside>
   );

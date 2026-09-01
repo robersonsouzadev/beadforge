@@ -250,15 +250,31 @@ export async function ensureDbTables() {
         "id" text PRIMARY KEY NOT NULL,
         "name" text NOT NULL,
         "slug" text NOT NULL UNIQUE,
-        "program_type" text DEFAULT 'shopee_affiliate' NOT NULL,
+        "program_type" text DEFAULT 'ml_affiliate' NOT NULL,
         "base_url" text,
         "affiliate_id" text,
-        "commission_pct" numeric(5,2) DEFAULT '8.00',
-        "cookie_duration_days" integer DEFAULT 7,
+        "default_campaign_tag" text DEFAULT 'beadforgekits',
+        "commission_pct" numeric(5,2) DEFAULT '12.00',
+        "cookie_duration_days" integer DEFAULT 1,
         "has_api" boolean DEFAULT false,
         "api_config" jsonb,
         "is_active" boolean DEFAULT true NOT NULL,
-        "priority" integer DEFAULT 0 NOT NULL,
+        "priority" integer DEFAULT 10 NOT NULL,
+        "created_at" timestamp DEFAULT now() NOT NULL,
+        "updated_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      ALTER TABLE "affiliate_merchant" ADD COLUMN IF NOT EXISTS "default_campaign_tag" text DEFAULT 'beadforgekits';
+
+      CREATE TABLE IF NOT EXISTS "affiliate_category" (
+        "id" text PRIMARY KEY NOT NULL,
+        "name" text NOT NULL,
+        "slug" text NOT NULL UNIQUE,
+        "parent_id" text,
+        "description" text,
+        "icon" text DEFAULT 'Package',
+        "display_order" integer DEFAULT 0 NOT NULL,
+        "is_active" boolean DEFAULT true NOT NULL,
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
@@ -266,42 +282,99 @@ export async function ensureDbTables() {
       CREATE TABLE IF NOT EXISTS "affiliate_product" (
         "id" text PRIMARY KEY NOT NULL,
         "merchant_id" text NOT NULL REFERENCES "affiliate_merchant"("id") ON DELETE CASCADE,
+        "category_id" text REFERENCES "affiliate_category"("id") ON DELETE SET NULL,
         "external_sku" text,
         "title" text NOT NULL,
+        "short_description" text,
         "url" text NOT NULL,
         "affiliate_url" text,
-        "brand" text DEFAULT 'pindoo' NOT NULL,
+        "campaign_tag" text DEFAULT 'beadforgekits',
+        "brand" text DEFAULT 'generic' NOT NULL,
         "bead_size" text DEFAULT '2.6mm' NOT NULL,
         "color_code" text,
         "color_hex" text,
-        "quantity_per_pack" integer DEFAULT 1000 NOT NULL,
-        "price_brl" numeric(10,2) DEFAULT '14.90' NOT NULL,
-        "price_per_bead" numeric(10,4) DEFAULT '0.0149' NOT NULL,
-        "rating" numeric(3,2) DEFAULT '4.80',
-        "review_count" integer DEFAULT 120,
+        "quantity_per_pack" integer DEFAULT 10000 NOT NULL,
+        "color_count" integer DEFAULT 1 NOT NULL,
+        "price_brl" numeric(10,2) DEFAULT '29.96' NOT NULL,
+        "previous_price_brl" numeric(10,2),
+        "price_per_bead" numeric(10,4) DEFAULT '0.0030' NOT NULL,
+        "price_varies" boolean DEFAULT false NOT NULL,
+        "price_last_checked_at" timestamp DEFAULT now() NOT NULL,
+        "currency" text DEFAULT 'BRL' NOT NULL,
+        "rating" numeric(3,2) DEFAULT '4.85',
+        "review_count" integer DEFAULT 140,
+        "seller_name" text,
         "is_available" boolean DEFAULT true NOT NULL,
-        "product_type" text DEFAULT 'single_color' NOT NULL,
+        "product_type" text DEFAULT 'multi_color_kit' NOT NULL,
+        "badge_tag" text,
+        "estimated_commission_pct" numeric(5,2) DEFAULT '12.00',
+        "priority_score" integer DEFAULT 10 NOT NULL,
+        "specs_json" jsonb,
         "image_url" text,
-        "estimated_shipping_days" integer DEFAULT 5,
+        "estimated_shipping_days" integer DEFAULT 3,
         "last_updated_at" timestamp DEFAULT now() NOT NULL,
         "is_active" boolean DEFAULT true NOT NULL,
         "created_at" timestamp DEFAULT now() NOT NULL,
         "updated_at" timestamp DEFAULT now() NOT NULL
       );
 
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "category_id" text;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "short_description" text;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "campaign_tag" text DEFAULT 'beadforgekits';
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "color_count" integer DEFAULT 1 NOT NULL;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "previous_price_brl" numeric(10,2);
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "price_varies" boolean DEFAULT false NOT NULL;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "price_last_checked_at" timestamp DEFAULT now() NOT NULL;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "currency" text DEFAULT 'BRL' NOT NULL;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "seller_name" text;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "badge_tag" text;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "estimated_commission_pct" numeric(5,2) DEFAULT '12.00';
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "priority_score" integer DEFAULT 10 NOT NULL;
+      ALTER TABLE "affiliate_product" ADD COLUMN IF NOT EXISTS "specs_json" jsonb;
+
+      CREATE TABLE IF NOT EXISTS "affiliate_product_color" (
+        "id" text PRIMARY KEY NOT NULL,
+        "product_id" text NOT NULL REFERENCES "affiliate_product"("id") ON DELETE CASCADE,
+        "internal_color_code" text NOT NULL,
+        "brand_color_code" text,
+        "color_name" text NOT NULL,
+        "color_hex" text NOT NULL,
+        "estimated_quantity" integer DEFAULT 400,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS "affiliate_click" (
         "id" text PRIMARY KEY NOT NULL,
         "user_id" text REFERENCES "user"("id") ON DELETE SET NULL,
         "product_id" text NOT NULL REFERENCES "affiliate_product"("id") ON DELETE CASCADE,
+        "merchant_id" text REFERENCES "affiliate_merchant"("id") ON DELETE SET NULL,
         "project_id" text REFERENCES "project"("id") ON DELETE SET NULL,
         "color_code" text,
-        "source" text DEFAULT 'bom_panel' NOT NULL,
+        "source" text DEFAULT 'shopping_modal' NOT NULL,
+        "campaign_tag" text DEFAULT 'beadforgekits',
         "user_agent" text,
         "ip_address" text,
+        "referrer" text,
+        "created_at" timestamp DEFAULT now() NOT NULL
+      );
+
+      ALTER TABLE "affiliate_click" ADD COLUMN IF NOT EXISTS "merchant_id" text;
+      ALTER TABLE "affiliate_click" ADD COLUMN IF NOT EXISTS "campaign_tag" text DEFAULT 'beadforgekits';
+      ALTER TABLE "affiliate_click" ADD COLUMN IF NOT EXISTS "referrer" text;
+
+      CREATE TABLE IF NOT EXISTS "affiliate_event" (
+        "id" text PRIMARY KEY NOT NULL,
+        "event_type" text NOT NULL,
+        "user_id" text REFERENCES "user"("id") ON DELETE SET NULL,
+        "product_id" text REFERENCES "affiliate_product"("id") ON DELETE CASCADE,
+        "project_id" text REFERENCES "project"("id") ON DELETE SET NULL,
+        "source" text DEFAULT 'shopping_modal' NOT NULL,
+        "metadata" jsonb,
         "created_at" timestamp DEFAULT now() NOT NULL
       );
 
       CREATE INDEX IF NOT EXISTS "idx_affiliate_prod_match" ON "affiliate_product"("brand", "color_code", "bead_size");
+      CREATE INDEX IF NOT EXISTS "idx_affiliate_prod_type" ON "affiliate_product"("product_type", "bead_size", "is_active");
       CREATE INDEX IF NOT EXISTS "idx_affiliate_click_prod" ON "affiliate_click"("product_id", "created_at");
     `);
     console.log('✅ PostgreSQL tables and columns verified/created.');

@@ -312,8 +312,8 @@ function renderPDFFooter(
   }
 
   if (isWatermarkActive) {
-    doc.fontSize(6.5).fillColor('#999999').text(
-      'Criado com BeadForge Studio • app.hamabeadsbrasil.com.br',
+    doc.fontSize(6.5).fillColor('#71717A').text(
+      'Criado com BeadForge Studio • Materiais recomendados no Mercado Livre: meli.la/2q4Xt3j (Kit 10.000 Beads 2,6mm)',
       margin,
       pageH + margin - 8,
       { width: pageW, align: 'center' }

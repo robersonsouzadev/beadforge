@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { isUserAdmin } from '@/lib/admin';
 import { getAdminFullDashboardData } from '@/app/actions/admin';
-import { listMerchantsAction, listProductsAction, getCommerceMetricsAction } from '@/app/actions/commerce';
+import { listMerchantsAction, listCategoriesAction, listProductsAction, getCommerceMetricsAction } from '@/app/actions/commerce';
 import { AdminDashboardClient } from '@/components/admin/AdminDashboardClient';
 
 export default async function AdminPage() {
@@ -22,17 +22,20 @@ export default async function AdminPage() {
   const dashboardData = await getAdminFullDashboardData();
 
   let initialMerchants: any[] = [];
+  let initialCategories: any[] = [];
   let initialProducts: any[] = [];
   let initialMetrics: any = null;
 
   try {
-    const [mRes, pRes, metricsRes] = await Promise.allSettled([
+    const [mRes, cRes, pRes, metricsRes] = await Promise.allSettled([
       listMerchantsAction(),
+      listCategoriesAction(),
       listProductsAction(),
       getCommerceMetricsAction(),
     ]);
 
     if (mRes.status === 'fulfilled') initialMerchants = mRes.value;
+    if (cRes.status === 'fulfilled') initialCategories = cRes.value;
     if (pRes.status === 'fulfilled') initialProducts = pRes.value;
     if (metricsRes.status === 'fulfilled') initialMetrics = metricsRes.value;
   } catch (err) {
@@ -47,6 +50,7 @@ export default async function AdminPage() {
       projects2DCount={dashboardData.projects2DCount}
       projects3DCount={dashboardData.projects3DCount}
       initialMerchants={initialMerchants}
+      initialCategories={initialCategories}
       initialProducts={initialProducts}
       initialMetrics={initialMetrics}
     />
