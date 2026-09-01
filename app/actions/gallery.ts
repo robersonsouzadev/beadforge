@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { galleryPattern, creatorProfile, user, project } from '@/db/schema';
 import { eq, and, desc, sql, ilike, or } from 'drizzle-orm';
-import { generateThumbnailFromGrid, generateThumbnailFromGrid3D } from '@/lib/thumbnail';
+import { generateThumbnailFromGrid, generateThumbnailFromGrid3D, svgToDataUri } from '@/lib/thumbnail';
 
 export interface GalleryPatternDTO {
   id: string;
@@ -37,22 +37,37 @@ export interface PatternDetailsDTO extends GalleryPatternDTO {
 
 export function resolvePatternThumbnail(thumbnailUrl?: string | null, patternData?: any): string | null {
   if (thumbnailUrl && typeof thumbnailUrl === 'string' && thumbnailUrl.trim().length > 0) {
+    if (thumbnailUrl.startsWith('data:image/svg+xml;utf8,')) {
+      try {
+        const rawSvg = decodeURIComponent(thumbnailUrl.replace('data:image/svg+xml;utf8,', ''));
+        return svgToDataUri(rawSvg);
+      } catch {
+        return thumbnailUrl;
+      }
+    }
     return thumbnailUrl;
   }
   if (!patternData) return null;
 
   const data = patternData as any;
-  if (data.grid && data.grid.cells && data.grid.cells.length > 0) {
-    return generateThumbnailFromGrid(data.grid);
+  const grid = data.grid || data.projectData?.grid;
+  const grid3D = data.grid3D || data.projectData?.grid3D;
+  const originalImage = data.originalImage || data.projectData?.originalImage;
+  const imageBase64 = data.imageBase64 || data.projectData?.imageBase64;
+
+  if (grid && grid.cells && grid.cells.length > 0) {
+    const thumb = generateThumbnailFromGrid(grid);
+    if (thumb) return thumb;
   }
-  if (data.grid3D && data.grid3D.layers && data.grid3D.layers.length > 0) {
-    return generateThumbnailFromGrid3D(data.grid3D);
+  if (grid3D && grid3D.layers && grid3D.layers.length > 0) {
+    const thumb3D = generateThumbnailFromGrid3D(grid3D);
+    if (thumb3D) return thumb3D;
   }
-  if (data.originalImage && typeof data.originalImage === 'string' && data.originalImage.startsWith('data:image')) {
-    return data.originalImage;
+  if (originalImage && typeof originalImage === 'string' && originalImage.startsWith('data:image')) {
+    return originalImage;
   }
-  if (data.imageBase64 && typeof data.imageBase64 === 'string' && data.imageBase64.startsWith('data:image')) {
-    return data.imageBase64;
+  if (imageBase64 && typeof imageBase64 === 'string' && imageBase64.startsWith('data:image')) {
+    return imageBase64;
   }
   return null;
 }

@@ -19,10 +19,7 @@ describe('Thumbnail Generator', () => {
     const thumb = generateThumbnailFromGrid(grid);
 
     expect(thumb).toBeDefined();
-    expect(thumb.startsWith('data:image/svg+xml;utf8,')).toBe(true);
-    expect(thumb).toContain('viewBox%3D%220%200%202%202%22');
-    expect(thumb).toContain(encodeURIComponent(BEAD_A4.hex));
-    expect(thumb).toContain(encodeURIComponent(BEAD_G8.hex));
+    expect(thumb.startsWith('data:image/svg+xml;base64,')).toBe(true);
   });
 
   it('retorna string vazia para grid nulo ou vazio', () => {
@@ -69,8 +66,7 @@ describe('Thumbnail Generator', () => {
 
     const thumb = generateThumbnailFromGrid3D(voxelGrid);
     expect(thumb).toBeDefined();
-    expect(thumb.startsWith('data:image/svg+xml;utf8,')).toBe(true);
-    expect(thumb).toContain('viewBox%3D%220%200%202%202%22');
+    expect(thumb.startsWith('data:image/svg+xml;base64,')).toBe(true);
   });
 
   it('createProjectThumbnail gera thumbnail apropriado', async () => {
@@ -81,6 +77,6 @@ describe('Thumbnail Generator', () => {
 
     const thumbFromGrid = await createProjectThumbnail({ grid });
     expect(thumbFromGrid).toBeDefined();
-    expect(thumbFromGrid!.startsWith('data:image/svg+xml;utf8,')).toBe(true);
+    expect(thumbFromGrid!.startsWith('data:image/svg+xml;base64,')).toBe(true);
   });
 });

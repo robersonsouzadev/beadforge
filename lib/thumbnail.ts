@@ -2,6 +2,19 @@ import type { GridMatrix } from '@/core/schemas/grid';
 import type { VoxelGrid3D } from '@/core/voxel/voxel-types';
 
 /**
+ * Converts an SVG string into a valid, standard Base64 data URI supported by all browsers and Next.js.
+ */
+export function svgToDataUri(svg: string): string {
+  if (typeof Buffer !== 'undefined') {
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  }
+  if (typeof btoa !== 'undefined') {
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  }
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
  * Resizes an image (base64 or blob URL) to a compact thumbnail data URL in the browser.
  * Keeps file size small (~20-40KB) for fast dashboard loading.
  */
@@ -76,7 +89,7 @@ export function generateThumbnailFromGrid(grid: GridMatrix): string {
   }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges" style="background:#09090b">${beadsSvg}</svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  return svgToDataUri(svg);
 }
 
 /**
@@ -119,7 +132,7 @@ export function generateThumbnailFromGrid3D(grid3D: VoxelGrid3D): string {
   }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges" style="background:#09090b">${beadsSvg}</svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  return svgToDataUri(svg);
 }
 
 /**
