@@ -6,10 +6,12 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { galleryPattern, creatorProfile, user, project } from '@/db/schema';
 import { eq, and, desc, sql, ilike, or } from 'drizzle-orm';
+import { isUserAdmin } from '@/lib/admin';
 import { generateThumbnailFromGrid, generateThumbnailFromGrid3D, svgToDataUri, resolvePatternThumbnail } from '@/lib/thumbnail';
 
 export interface GalleryPatternDTO {
   id: string;
+  userId: string;
   slug: string;
   title: string;
   description?: string | null;
@@ -23,6 +25,7 @@ export interface GalleryPatternDTO {
   remixCount: number;
   isValidated3D: boolean;
   publishedAt: Date;
+  canDelete?: boolean;
   creator: {
     name: string;
     handle?: string | null;
@@ -54,6 +57,14 @@ export async function getGalleryPatternsAction(options?: {
   sort?: 'popular' | 'recent' | 'small';
   limit?: number;
 }): Promise<GalleryPatternDTO[]> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  }).catch(() => null);
+
+  const email = session?.user?.email?.toLowerCase().trim();
+  const isAdmin = isUserAdmin(email) || (session?.user as any)?.role === 'admin';
+  const currentUserId = session?.user?.id;
+
   const search = options?.search?.trim();
   const category = options?.category && options.category !== 'all' ? options.category : null;
   const sort = options?.sort || 'popular';
@@ -106,8 +117,11 @@ export async function getGalleryPatternsAction(options?: {
         .catch(console.warn);
     }
 
+    const canDelete = isAdmin || (currentUserId ? p.userId === currentUserId : false);
+
     return {
       id: p.id,
+      userId: p.userId,
       slug: p.slug,
       title: p.title,
       description: p.description,
@@ -121,6 +135,7 @@ export async function getGalleryPatternsAction(options?: {
       remixCount: p.remixCount,
       isValidated3D: p.isValidated3D,
       publishedAt: p.publishedAt,
+      canDelete,
       creator: {
         name: cp?.displayName || u.name || 'Criador BeadForge',
         handle: cp?.handle || null,
@@ -133,6 +148,14 @@ export async function getGalleryPatternsAction(options?: {
 export async function getPatternBySlugAction(
   slug: string
 ): Promise<PatternDetailsDTO | null> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  }).catch(() => null);
+
+  const email = session?.user?.email?.toLowerCase().trim();
+  const isAdmin = isUserAdmin(email) || (session?.user as any)?.role === 'admin';
+  const currentUserId = session?.user?.id;
+
   const [result] = await db
     .select({
       pattern: galleryPattern,
@@ -159,8 +182,11 @@ export async function getPatternBySlugAction(
       .catch(console.warn);
   }
 
+  const canDelete = isAdmin || (currentUserId ? p.userId === currentUserId : false);
+
   return {
     id: p.id,
+    userId: p.userId,
     slug: p.slug,
     title: p.title,
     description: p.description,
@@ -176,12 +202,56 @@ export async function getPatternBySlugAction(
     isValidated3D: p.isValidated3D,
     publishedAt: p.publishedAt,
     createdAt: p.createdAt,
+    canDelete,
     creator: {
       name: cp?.displayName || u.name || 'Criador BeadForge',
       handle: cp?.handle || null,
       avatarUrl: cp?.avatarUrl || u.image || null,
     },
   };
+}
+
+export async function deleteGalleryPatternAction(identifier: string) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new Error('Você precisa estar logado para realizar esta ação.');
+  }
+
+  const email = session.user.email?.toLowerCase().trim();
+  const isAdmin = isUserAdmin(email) || (session.user as any)?.role === 'admin';
+
+  // Localiza o padrão por ID ou por Slug
+  const [pat] = await db
+    .select()
+    .from(galleryPattern)
+    .where(
+      or(
+        eq(galleryPattern.id, identifier),
+        eq(galleryPattern.slug, identifier)
+      )
+    )
+    .limit(1);
+
+  if (!pat) {
+    throw new Error('Molde não encontrado na galeria.');
+  }
+
+  // Apenas Administrador ou o próprio criador do molde pode excluir
+  if (!isAdmin && pat.userId !== session.user.id) {
+    throw new Error('Você não tem permissão para excluir este molde da galeria.');
+  }
+
+  await db.delete(galleryPattern).where(eq(galleryPattern.id, pat.id));
+
+  revalidatePath('/gallery');
+  revalidatePath(`/gallery/${pat.slug}`);
+  revalidatePath('/dashboard');
+  revalidatePath('/admin');
+
+  return { success: true, id: pat.id, slug: pat.slug };
 }
 
 export async function publishPatternToGalleryAction(

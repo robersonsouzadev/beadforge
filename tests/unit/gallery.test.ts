@@ -99,11 +99,14 @@ vi.mock('@/db', () => {
           where: vi.fn().mockResolvedValue({}),
         }),
       }),
+      delete: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue({}),
+      }),
     },
   };
 });
 
-import { getPatternBySlugAction, publishPatternToGalleryAction } from '../../app/actions/gallery';
+import { getPatternBySlugAction, publishPatternToGalleryAction, deleteGalleryPatternAction } from '../../app/actions/gallery';
 
 describe('Galeria Pública e Superfície de SEO (Phase 3)', () => {
   it('recupera detalhes do padrão para exibição na página pública com SEO', async () => {
@@ -124,5 +127,10 @@ describe('Galeria Pública e Superfície de SEO (Phase 3)', () => {
 
     expect(result.success).toBe(true);
     expect(result.slug).toContain('super-mario-bros');
+  });
+
+  it('permite a exclusão de um molde da galeria pública', async () => {
+    const result = await deleteGalleryPatternAction('pat-1');
+    expect(result.success).toBe(true);
   });
 });

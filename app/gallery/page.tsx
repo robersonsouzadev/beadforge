@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   getGalleryPatternsAction,
   likePatternAction,
+  deleteGalleryPatternAction,
   type GalleryPatternDTO,
 } from '@/app/actions/gallery';
 import {
@@ -19,6 +20,7 @@ import {
   Filter,
   User,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -81,6 +83,24 @@ export default function GalleryPage() {
       await likePatternAction(slug);
     } catch (err) {
       console.error('Failed to like pattern:', err);
+    }
+  };
+
+  const handleDeletePattern = async (pat: GalleryPatternDTO, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!confirm(`Tem certeza que deseja excluir o molde "${pat.title}" da galeria pública?`)) {
+      return;
+    }
+
+    setPatterns((prev) => prev.filter((p) => p.id !== pat.id));
+
+    try {
+      await deleteGalleryPatternAction(pat.id);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir molde.');
+      loadPatterns();
     }
   };
 
@@ -250,10 +270,21 @@ export default function GalleryPage() {
                     <Layers className="w-8 h-8 text-zinc-600 opacity-40" />
                   )}
 
+                  {/* Delete Button floating on top-left (Admin / Author) */}
+                  {pat.canDelete && (
+                    <button
+                      onClick={(e) => handleDeletePattern(pat, e)}
+                      title="Excluir este molde da galeria pública"
+                      className="absolute top-2 left-2 p-1.5 rounded-lg bg-zinc-900/90 hover:bg-rose-600 backdrop-blur border border-zinc-700/60 hover:border-rose-500 text-zinc-400 hover:text-white transition flex items-center justify-center text-[10px] font-bold shadow z-10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
                   {/* Likes Button floating on top-right */}
                   <button
                     onClick={(e) => handleLike(pat.slug, e)}
-                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/80 backdrop-blur border border-zinc-700/60 text-zinc-300 hover:text-rose-400 transition flex items-center gap-1 text-[10px] font-bold shadow"
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-900/80 backdrop-blur border border-zinc-700/60 text-zinc-300 hover:text-rose-400 transition flex items-center gap-1 text-[10px] font-bold shadow z-10"
                   >
                     <Heart
                       className={`w-3 h-3 ${

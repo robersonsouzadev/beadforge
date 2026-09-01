@@ -65,6 +65,7 @@ export async function getCreatorProfileByHandleAction(
 
     return {
       id: p.id,
+      userId: p.userId,
       slug: p.slug,
       title: p.title,
       description: p.description,

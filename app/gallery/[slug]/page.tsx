@@ -7,6 +7,7 @@ import {
   getPatternBySlugAction,
   likePatternAction,
   remixPatternAction,
+  deleteGalleryPatternAction,
   type PatternDetailsDTO,
 } from '@/app/actions/gallery';
 import {
@@ -24,6 +25,7 @@ import {
   Copy,
   Scissors,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -42,6 +44,7 @@ export default function PatternDetailsPage({ params }: PatternPageProps) {
   const [isLiking, setIsLiking] = useState(false);
   const [liked, setLiked] = useState(false);
   const [isRemixing, setIsRemixing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
@@ -76,6 +79,24 @@ export default function PatternDetailsPage({ params }: PatternPageProps) {
     } catch (err: any) {
       alert(err.message || 'Erro ao remixar molde.');
       setIsRemixing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!pattern) return;
+
+    if (!confirm(`Tem certeza que deseja excluir o molde "${pattern.title}" da galeria pública?`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteGalleryPatternAction(pattern.id);
+      router.push('/gallery');
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao excluir molde.');
+      setIsDeleting(false);
     }
   };
 
@@ -284,6 +305,22 @@ export default function PatternDetailsPage({ params }: PatternPageProps) {
                     <Heart className={`w-4 h-4 ${liked ? 'fill-rose-500' : ''}`} />
                     <span>{liked ? 'Curtido!' : `Curtir (${pattern.likesCount})`}</span>
                   </button>
+
+                  {pattern.canDelete && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      title="Excluir este molde da galeria pública"
+                      className="py-3 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-500 text-rose-400 font-bold text-xs flex items-center justify-center gap-1.5 transition"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                      <span>Excluir Molde</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
