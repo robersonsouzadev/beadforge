@@ -440,6 +440,57 @@ export async function getRecommendedProductsForBOMAction(params: {
   return results;
 }
 
+export async function getFeaturedKitsAction(): Promise<ProductDTO[]> {
+  await ensureDbTables();
+  try {
+    const rows = await db
+      .select({
+        product: affiliateProduct,
+        merchantName: affiliateMerchant.name,
+        merchantSlug: affiliateMerchant.slug,
+      })
+      .from(affiliateProduct)
+      .innerJoin(affiliateMerchant, eq(affiliateProduct.merchantId, affiliateMerchant.id))
+      .where(
+        and(
+          eq(affiliateProduct.isActive, true),
+          eq(affiliateMerchant.isActive, true),
+          sql`(${affiliateProduct.productType} IN ('kit', 'pegboard', 'tool') OR ${affiliateProduct.colorCode} IS NULL)`
+        )
+      )
+      .orderBy(desc(affiliateProduct.rating), affiliateProduct.priceBrl)
+      .limit(20);
+
+    return rows.map((r) => ({
+      id: r.product.id,
+      merchantId: r.product.merchantId,
+      merchantName: r.merchantName,
+      merchantSlug: r.merchantSlug,
+      externalSku: r.product.externalSku,
+      title: r.product.title,
+      url: r.product.url,
+      affiliateUrl: r.product.affiliateUrl || r.product.url,
+      brand: r.product.brand,
+      beadSize: r.product.beadSize,
+      colorCode: r.product.colorCode,
+      colorHex: r.product.colorHex,
+      quantityPerPack: r.product.quantityPerPack,
+      priceBrl: Number(r.product.priceBrl),
+      pricePerBead: Number(r.product.pricePerBead),
+      rating: Number(r.product.rating || 4.8),
+      reviewCount: r.product.reviewCount || 0,
+      isAvailable: r.product.isAvailable,
+      productType: r.product.productType,
+      imageUrl: r.product.imageUrl,
+      estimatedShippingDays: r.product.estimatedShippingDays || 5,
+      isActive: r.product.isActive,
+    }));
+  } catch (err) {
+    console.error('Erro em getFeaturedKitsAction:', err);
+    return [];
+  }
+}
+
 // ── Tracking Action ──
 
 export async function trackProductClickAction(params: {

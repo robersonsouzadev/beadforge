@@ -77,6 +77,7 @@ export function AdminCommerceTab({
 
   // Product form state
   const [pMerchantId, setPMerchantId] = useState('');
+  const [pExternalSku, setPExternalSku] = useState('');
   const [pTitle, setPTitle] = useState('');
   const [pUrl, setPUrl] = useState('');
   const [pAffiliateUrl, setPAffiliateUrl] = useState('');
@@ -177,6 +178,7 @@ export function AdminCommerceTab({
     if (product) {
       setEditingProduct(product);
       setPMerchantId(product.merchantId);
+      setPExternalSku(product.externalSku || '');
       setPTitle(product.title);
       setPUrl(product.url);
       setPAffiliateUrl(product.affiliateUrl || product.url);
@@ -188,10 +190,11 @@ export function AdminCommerceTab({
       setPPriceBrl(product.priceBrl);
       setPRating(product.rating);
       setPShippingDays(product.estimatedShippingDays);
-      setPProductType(product.productType);
+      setPProductType(product.productType || 'single_color');
     } else {
       setEditingProduct(null);
       setPMerchantId(merchants[0]?.id || '');
+      setPExternalSku('');
       setPTitle('');
       setPUrl('');
       setPAffiliateUrl('');
@@ -214,17 +217,24 @@ export function AdminCommerceTab({
       alert('Selecione um parceiro/marketplace.');
       return;
     }
+    const finalUrl = (pAffiliateUrl || pUrl || '').trim();
+    if (!finalUrl) {
+      alert('Por favor, informe o Link do Produto ou Link de Afiliado.');
+      return;
+    }
+
     startTransition(async () => {
       try {
         await saveProductAction({
           id: editingProduct?.id,
           merchantId: pMerchantId,
+          externalSku: pExternalSku.trim() || undefined,
           title: pTitle,
-          url: pUrl,
-          affiliateUrl: pAffiliateUrl,
+          url: pUrl.trim() || finalUrl,
+          affiliateUrl: pAffiliateUrl.trim() || finalUrl,
           brand: pBrand,
           beadSize: pBeadSize,
-          colorCode: pColorCode || undefined,
+          colorCode: pColorCode.trim() || undefined,
           colorHex: pColorHex || undefined,
           quantityPerPack: Number(pQuantity),
           priceBrl: Number(pPriceBrl),
@@ -751,20 +761,36 @@ export function AdminCommerceTab({
             </h3>
 
             <form onSubmit={handleSaveProduct} className="space-y-3">
-              <div>
-                <label className="block font-semibold text-zinc-300 mb-1">Marketplace / Parceiro *</label>
-                <select
-                  value={pMerchantId}
-                  onChange={(e) => setPMerchantId(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
-                  required
-                >
-                  {merchants.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.commissionPct}% comissão)
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-zinc-300 mb-1">Marketplace / Parceiro *</label>
+                  <select
+                    value={pMerchantId}
+                    onChange={(e) => setPMerchantId(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                    required
+                  >
+                    {merchants.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.commissionPct}% comissão)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-zinc-300 mb-1">Tipo de Produto *</label>
+                  <select
+                    value={pProductType}
+                    onChange={(e) => setPProductType(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="single_color">Refil de Cor Única</option>
+                    <option value="kit">Kit Completo / Maleta Multicor</option>
+                    <option value="pegboard">Placa Pegboard</option>
+                    <option value="tool">Ferro / Pinça / Acessório</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -773,10 +799,40 @@ export function AdminCommerceTab({
                   type="text"
                   value={pTitle}
                   onChange={(e) => setPTitle(e.target.value)}
-                  placeholder="Ex: Mini Beads 2.6mm Cor A1 (Branco Puro) 1000un"
+                  placeholder="Ex: Kit Perler Hama 15.000un 2.6mm Pegboard ou Mini Beads Cor A1 1000un"
                   className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
                   required
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-zinc-300 mb-1">Link do Produto / Link de Afiliado *</label>
+                  <input
+                    type="url"
+                    value={pAffiliateUrl || pUrl}
+                    onChange={(e) => {
+                      setPAffiliateUrl(e.target.value);
+                      setPUrl(e.target.value);
+                    }}
+                    placeholder="https://meli.la/2ZuJn4o"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono text-[11px] focus:outline-none focus:border-amber-400"
+                    required
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Cole o link gerado pelo Mercado Livre ou Shopee.</p>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-zinc-300 mb-1">ID do Produto / Código ML / SKU</label>
+                  <input
+                    type="text"
+                    value={pExternalSku}
+                    onChange={(e) => setPExternalSku(e.target.value)}
+                    placeholder="Ex: 7SVEU4-W2PV"
+                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono uppercase focus:outline-none focus:border-amber-400"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Código do buscador (ex: 7SVEU4-W2PV).</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -786,7 +842,7 @@ export function AdminCommerceTab({
                     type="text"
                     value={pColorCode}
                     onChange={(e) => setPColorCode(e.target.value.toUpperCase())}
-                    placeholder="Ex: A1, H10"
+                    placeholder="Ex: A1, H10 (ou vazio se for Kit)"
                     className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono uppercase focus:outline-none focus:border-amber-400"
                   />
                 </div>
@@ -810,7 +866,7 @@ export function AdminCommerceTab({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-zinc-300 mb-1">Tamanho</label>
+                  <label className="block font-semibold text-zinc-300 mb-1">Tamanho do Bead</label>
                   <select
                     value={pBeadSize}
                     onChange={(e) => setPBeadSize(e.target.value)}
@@ -836,7 +892,7 @@ export function AdminCommerceTab({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-zinc-300 mb-1">Qtd de Beads por Pacote *</label>
+                  <label className="block font-semibold text-zinc-300 mb-1">Qtd de Beads no Pacote *</label>
                   <input
                     type="number"
                     value={pQuantity}
@@ -845,29 +901,6 @@ export function AdminCommerceTab({
                     required
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-zinc-300 mb-1">URL Original do Produto *</label>
-                <input
-                  type="url"
-                  value={pUrl}
-                  onChange={(e) => setPUrl(e.target.value)}
-                  placeholder="https://shopee.com.br/produto-xyz"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-zinc-300 mb-1">Link de Afiliado (com tag de rastreamento)</label>
-                <input
-                  type="url"
-                  value={pAffiliateUrl}
-                  onChange={(e) => setPAffiliateUrl(e.target.value)}
-                  placeholder="https://shopee.com.br/...&utm_source=beadforge"
-                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono text-[11px] focus:outline-none focus:border-amber-400"
-                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
