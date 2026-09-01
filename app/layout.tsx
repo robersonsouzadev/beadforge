@@ -6,6 +6,16 @@ import { CookieConsent } from '@/components/CookieConsent';
 export const metadata: Metadata = {
   title: 'BeadForge Studio — Gerador Profissional de Moldes para Beads',
   description: 'Crie e converta imagens em moldes de montagem para Fuse Beads (2.6mm e 5.0mm) com exportação em PDF vetorial, HD PNG e lista de materiais.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/beadforge-icon.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/beadforge-icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
