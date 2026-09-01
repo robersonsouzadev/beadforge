@@ -260,10 +260,10 @@ export function AdminUsersTable({ users }: { users: AdminUserItem[] }) {
                             <Crown className="w-3 h-3 fill-amber-400 text-amber-400" />
                             STUDIO
                           </span>
-                        ) : u.planId === 'pro' || u.isPro ? (
+                        ) : u.planId === 'pro' ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-300 font-bold text-[10px] uppercase tracking-wider">
                             <Zap className="w-3 h-3 fill-sky-400 text-sky-400" />
-                            CREATOR
+                            PRO
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 text-[10px] font-semibold">

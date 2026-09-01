@@ -55,17 +55,23 @@ export default async function DashboardPage() {
           <div className="bg-zinc-950/80 px-4 py-2 rounded-xl border border-zinc-800 text-xs">
             <span className="text-zinc-500 block">Seu Plano Atual:</span>
             <span className="font-bold text-amber-400 uppercase tracking-wider">
-              {sub.isPro ? 'BeadForge Pro ⚡' : 'Gratuito'}
+              {sub.isStudio
+                ? 'BeadForge Studio 👑'
+                : sub.isTrial
+                ? `Degustação VIP (${sub.trialDaysRemaining || 3}d restantes) ⚡`
+                : sub.isPro
+                ? 'BeadForge Pro ⚡'
+                : 'Plano Gratuito'}
             </span>
           </div>
 
-          {!sub.isPro && (
+          {(!sub.isPro || sub.isTrial) && (
             <Link
               href="/pricing"
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition transform hover:scale-105"
             >
               <Zap className="w-4 h-4 fill-zinc-950" />
-              <span>Fazer Upgrade</span>
+              <span>{sub.isTrial ? 'Garantir Acesso Pro' : 'Fazer Upgrade'}</span>
             </Link>
           )}
         </div>

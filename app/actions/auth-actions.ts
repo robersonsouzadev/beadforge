@@ -91,30 +91,5 @@ export async function syncAdminCredentialsAction(email: string, password: string
       .where(eq(account.id, existingAccount.id));
   }
 
-  // 3. Garantir assinatura Studio vitalícia
-  const [existingSub] = await db
-    .select()
-    .from(subscription)
-    .where(eq(subscription.userId, userId))
-    .limit(1);
-
-  if (!existingSub) {
-    await db.insert(subscription).values({
-      id: crypto.randomUUID(),
-      userId: userId,
-      status: 'active',
-      stripePriceId: 'studio',
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-  } else if (existingSub.status !== 'active') {
-    await db
-      .update(subscription)
-      .set({ status: 'active', stripePriceId: 'studio', updatedAt: new Date() })
-      .where(eq(subscription.id, existingSub.id));
-  }
-
   return { success: true };
 }
