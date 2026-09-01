@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Center } from '@react-three/drei';
 import { useEditorStore } from '@/store/editor-store';
 import { BeadRenderer3D } from './BeadRenderer3D';
+import { SupportRods3D } from './SupportRods3D';
 import { LayerCanvas2D } from './LayerCanvas2D';
 import {
   Layers,
@@ -87,6 +88,7 @@ export function Viewport3D() {
               {grid3D && (
                 <>
                   <BeadRenderer3D grid3D={grid3D} />
+                  <SupportRods3D grid3D={grid3D} explodedSpacing={explodedSpacing} />
                   <PegboardBaseHelper
                     width={grid3D.width}
                     height={grid3D.height}
@@ -428,6 +430,28 @@ export function Viewport3D() {
           </>
         )}
       </div>
+
+      {/* Barra Flutuante Inferior: Expansão de Camadas (Estilo Beads3D) */}
+      {centerViewMode === '3d' && grid3D && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-2xl">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[11px] font-semibold text-zinc-300">Expansão de Camadas:</span>
+            <input
+              type="range"
+              min="0"
+              max="30"
+              step="1"
+              value={explodedSpacing}
+              onChange={(e) => setExplodedSpacing(Number(e.target.value))}
+              className="w-32 sm:w-48 accent-amber-400 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+              title="Afastar camadas para visualização explodida / lateral"
+            />
+            <span className="font-mono font-bold text-amber-400 text-xs w-8 text-right">
+              {explodedSpacing}mm
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Botão de Iniciar Montagem Passo-a-Passo */}
       <div className="absolute bottom-4 right-4 z-10">

@@ -41,7 +41,6 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
 
     grid3D.layers.forEach((layer, zIdx) => {
       if (!layer.isVisible) return;
-      if (!showAllLayers3D && zIdx !== activeLayerZ) return;
 
       for (let r = 0; r < layer.grid.height; r++) {
         for (let c = 0; c < layer.grid.width; c++) {
@@ -61,7 +60,7 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
     });
 
     return list;
-  }, [grid3D, showAllLayers3D, activeLayerZ, explodedSpacing]);
+  }, [grid3D, activeLayerZ, explodedSpacing]);
 
   // Geometria autêntica do Bead (Tubo vazado com furo central e chanfro suave realista)
   const beadGeometry = useMemo(() => {
@@ -106,16 +105,21 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
       matrix.setPosition(bead.x, bead.y, bead.z);
       mesh.setMatrixAt(i, matrix);
 
-      // Efeito de destaque ou onion skinning
+      const isCurrentLayer = bead.layerIndex === activeLayerZ;
+
+      // Efeito de destaque ou modo Isolar (Ghost / X-Ray)
       if (highlightBeadCode && bead.code !== highlightBeadCode) {
-        color.set(bead.hex).multiplyScalar(0.25); // Escurece cores não destacadas
-      } else if (onionSkinEnabled && bead.layerIndex !== activeLayerZ) {
+        color.set(bead.hex).multiplyScalar(0.2); // Escurece cores não destacadas
+      } else if (!showAllLayers3D && !isCurrentLayer) {
+        // Modo Isolar com Ghost / X-Ray das outras camadas (estilo Beads3D)
+        color.set(bead.hex).lerp(new THREE.Color('#27272A'), 0.75).multiplyScalar(0.28);
+      } else if (onionSkinEnabled && !isCurrentLayer) {
         if (bead.layerIndex === activeLayerZ - 1) {
           color.set('#38BDF8').multiplyScalar(0.7); // Camada anterior em azul
         } else if (bead.layerIndex === activeLayerZ + 1) {
           color.set('#4ADE80').multiplyScalar(0.7); // Próxima camada em verde
         } else {
-          color.set(bead.hex).multiplyScalar(0.35);
+          color.set(bead.hex).multiplyScalar(0.25);
         }
       } else {
         color.set(bead.hex);
@@ -126,7 +130,7 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
 
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [beadInstances, highlightBeadCode, onionSkinEnabled, activeLayerZ]);
+  }, [beadInstances, highlightBeadCode, onionSkinEnabled, showAllLayers3D, activeLayerZ]);
 
   const handleClick = (e: any) => {
     e.stopPropagation();
