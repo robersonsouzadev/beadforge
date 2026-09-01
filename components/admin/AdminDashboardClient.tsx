@@ -16,6 +16,7 @@ import { AdminAiConfigTab } from '@/components/admin/AdminAiConfigTab';
 import { AdminUsersTable } from '@/components/AdminUsersTable';
 import { AdminAiLogsTable } from '@/components/admin/AdminAiLogsTable';
 import { AdminCommerceTab } from '@/components/admin/AdminCommerceTab';
+import type { MerchantDTO, ProductDTO, CommerceMetricsDTO } from '@/app/actions/commerce';
 
 interface AdminDashboardClientProps {
   stats: AdminStats;
@@ -23,6 +24,9 @@ interface AdminDashboardClientProps {
   aiConfig: AdminAiConfig;
   projects2DCount: number;
   projects3DCount: number;
+  initialMerchants?: MerchantDTO[];
+  initialProducts?: ProductDTO[];
+  initialMetrics?: CommerceMetricsDTO | null;
 }
 
 export function AdminDashboardClient({
@@ -31,6 +35,9 @@ export function AdminDashboardClient({
   aiConfig,
   projects2DCount,
   projects3DCount,
+  initialMerchants = [],
+  initialProducts = [],
+  initialMetrics = null,
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState<'analytics' | 'commerce' | 'ai_config' | 'users' | 'logs'>('analytics');
 
@@ -146,7 +153,11 @@ export function AdminDashboardClient({
 
       {activeTab === 'commerce' && (
         <div className="animate-fade-in">
-          <AdminCommerceTab />
+          <AdminCommerceTab
+            initialMerchants={initialMerchants}
+            initialProducts={initialProducts}
+            initialMetrics={initialMetrics}
+          />
         </div>
       )}
 

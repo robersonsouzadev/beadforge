@@ -33,15 +33,25 @@ import {
   type CommerceMetricsDTO,
 } from '@/app/actions/commerce';
 
-export function AdminCommerceTab() {
+interface AdminCommerceTabProps {
+  initialMerchants?: MerchantDTO[];
+  initialProducts?: ProductDTO[];
+  initialMetrics?: CommerceMetricsDTO | null;
+}
+
+export function AdminCommerceTab({
+  initialMerchants = [],
+  initialProducts = [],
+  initialMetrics = null,
+}: AdminCommerceTabProps = {}) {
   const [subTab, setSubTab] = useState<'metrics' | 'merchants' | 'products'>('metrics');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Data states
-  const [metrics, setMetrics] = useState<CommerceMetricsDTO | null>(null);
-  const [merchants, setMerchants] = useState<MerchantDTO[]>([]);
-  const [products, setProducts] = useState<ProductDTO[]>([]);
+  const [metrics, setMetrics] = useState<CommerceMetricsDTO | null>(initialMetrics);
+  const [merchants, setMerchants] = useState<MerchantDTO[]>(initialMerchants);
+  const [products, setProducts] = useState<ProductDTO[]>(initialProducts);
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -143,6 +153,7 @@ export function AdminCommerceTab() {
           isActive: mIsActive,
         });
         setIsMerchantModalOpen(false);
+        alert('Parceiro salvo com sucesso!');
         await loadData();
       } catch (err: any) {
         alert(err.message || 'Erro ao salvar parceiro.');
@@ -222,6 +233,7 @@ export function AdminCommerceTab() {
           productType: pProductType,
         });
         setIsProductModalOpen(false);
+        alert('Produto salvo com sucesso!');
         await loadData();
       } catch (err: any) {
         alert(err.message || 'Erro ao salvar produto.');

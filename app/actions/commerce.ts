@@ -183,7 +183,7 @@ export async function saveMerchantAction(data: {
 
     if (existing) {
       await db.update(affiliateMerchant).set(values).where(eq(affiliateMerchant.id, existing.id));
-      revalidatePath('/admin/commerce');
+      revalidatePath('/admin');
       return { success: true, id: existing.id };
     }
 
@@ -194,14 +194,14 @@ export async function saveMerchantAction(data: {
     });
   }
 
-  revalidatePath('/admin/commerce');
+  revalidatePath('/admin');
   return { success: true, id };
 }
 
 export async function deleteMerchantAction(id: string) {
   await requireAdmin();
   await db.delete(affiliateMerchant).where(eq(affiliateMerchant.id, id));
-  revalidatePath('/admin/commerce');
+  revalidatePath('/admin');
   return { success: true };
 }
 
@@ -330,14 +330,14 @@ export async function saveProductAction(data: {
     });
   }
 
-  revalidatePath('/admin/commerce');
+  revalidatePath('/admin');
   return { success: true, id };
 }
 
 export async function deleteProductAction(id: string) {
   await requireAdmin();
   await db.delete(affiliateProduct).where(eq(affiliateProduct.id, id));
-  revalidatePath('/admin/commerce');
+  revalidatePath('/admin');
   return { success: true };
 }
 
@@ -693,6 +693,6 @@ export async function seedPopularBeadProductsAction() {
     }
   }
 
-  revalidatePath('/admin/commerce');
+  revalidatePath('/admin');
   return { success: true, insertedCount: inserted };
 }
