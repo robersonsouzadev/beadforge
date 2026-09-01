@@ -3,13 +3,14 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from '@/lib/auth-client';
+import { signIn, useSession } from '@/lib/auth-client';
 import { LogIn, ArrowRight, AlertCircle, Loader2, Eye, EyeOff, CheckSquare, Square } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const { data: session, isPending: isSessionLoading } = useSession();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +18,13 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Se já houver uma sessão ativa persistente, redireciona diretamente sem pedir login novamente
+  useEffect(() => {
+    if (session?.user) {
+      router.replace(redirectUrl);
+    }
+  }, [session, redirectUrl, router]);
 
   // Carrega email lembrado do localStorage para conveniência
   useEffect(() => {
@@ -53,13 +61,19 @@ function LoginForm() {
         email: email.trim(),
         password,
         rememberMe,
-      });
+        dontRememberMe: !rememberMe,
+      } as any);
 
       if (result?.error && email.toLowerCase().trim() === 'robersonsouza@outlook.com') {
         try {
           const { syncAdminCredentialsAction } = await import('@/app/actions/auth-actions');
           await syncAdminCredentialsAction(email, password);
-          result = await signIn.email({ email: email.trim(), password, rememberMe });
+          result = await signIn.email({
+            email: email.trim(),
+            password,
+            rememberMe,
+            dontRememberMe: !rememberMe,
+          } as any);
         } catch (_) {}
       }
 
@@ -88,6 +102,16 @@ function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  if (session?.user) {
+    return (
+      <div className="py-16 text-center text-zinc-400 flex flex-col items-center justify-center gap-3 select-none">
+        <Loader2 className="w-7 h-7 animate-spin text-amber-400" />
+        <span className="text-sm font-semibold text-white">Sessão ativa encontrada</span>
+        <span className="text-xs text-zinc-500">Redirecionando para seu painel...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 select-none">

@@ -45,7 +45,20 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // atualiza o token a cada 24 horas em background
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes
+      maxAge: 60 * 60 * 24 * 7, // 7 dias de cache de cookie
+    },
+  },
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === 'production',
+    crossSubDomainCookies: {
+      enabled: process.env.NODE_ENV === 'production',
+      domain: process.env.NODE_ENV === 'production' ? '.hamabeadsbrasil.com.br' : undefined,
+    },
+    defaultCookieAttributes: {
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      path: '/',
     },
   },
 });
