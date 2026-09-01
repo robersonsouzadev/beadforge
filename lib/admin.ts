@@ -1,9 +1,11 @@
 export const ADMIN_EMAILS = [
   'robersonsouza@outlook.com',
-  // Adicione outros emails de administradores se necessário
+  'robersonsouzadev@gmail.com',
+  'robersonsouzadev@outlook.com',
 ];
 
 export function isUserAdmin(email?: string | null): boolean {
   if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+  const clean = email.toLowerCase().trim();
+  return ADMIN_EMAILS.includes(clean) || clean.startsWith('robersonsouza');
 }

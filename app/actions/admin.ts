@@ -71,7 +71,10 @@ export async function checkAdminSession() {
     headers: await headers(),
   });
 
-  if (!session?.user || !isUserAdmin(session.user.email)) {
+  const email = session?.user?.email?.toLowerCase().trim();
+  const isAdmin = isUserAdmin(email) || (session?.user as any)?.role === 'admin';
+
+  if (!session?.user || !isAdmin) {
     throw new Error('Acesso negado. Apenas administradores podem executar esta ação.');
   }
 
@@ -83,7 +86,10 @@ export async function getAdminData(): Promise<AdminStats> {
     headers: await headers(),
   });
 
-  if (!session?.user || !isUserAdmin(session.user.email)) {
+  const email = session?.user?.email?.toLowerCase().trim();
+  const isAdmin = isUserAdmin(email) || (session?.user as any)?.role === 'admin';
+
+  if (!session?.user || !isAdmin) {
     redirect('/dashboard');
   }
 
