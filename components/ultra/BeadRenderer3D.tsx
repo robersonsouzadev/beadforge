@@ -30,7 +30,7 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
 
   const { camera } = useThree();
 
-  // Filtrar e preparar lista de beads a renderizar
+  // Filtrar e preparar lista de beads a renderizar em pé (Vertical Stacking)
   const beadInstances = useMemo(() => {
     const list: BeadInstanceData[] = [];
     if (!grid3D) return list;
@@ -38,6 +38,7 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
     const pitch = grid3D.pitchMm || 2.6;
     const halfW = grid3D.width / 2;
     const halfH = grid3D.height / 2;
+    const halfD = grid3D.layers.length / 2;
 
     grid3D.layers.forEach((layer, zIdx) => {
       if (!layer.isVisible) return;
@@ -50,7 +51,7 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
           list.push({
             x: (c - halfW + 0.5) * pitch,
             y: (halfH - r - 0.5) * pitch,
-            z: zIdx * (pitch + explodedSpacing),
+            z: (zIdx - halfD + 0.5) * (pitch + explodedSpacing),
             hex: cell.hex,
             code: cell.beadCode,
             layerIndex: zIdx,
@@ -98,7 +99,7 @@ export function BeadRenderer3D({ grid3D }: { grid3D: VoxelGrid3D }) {
 
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
-    const rot = new THREE.Euler(Math.PI / 2, 0, 0); // Alinha com o eixo Z de empilhamento
+    const rot = new THREE.Euler(0, 0, 0); // Alinhado de frente para visualização em pé
 
     beadInstances.forEach((bead, i) => {
       matrix.makeRotationFromEuler(rot);

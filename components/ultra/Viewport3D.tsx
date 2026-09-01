@@ -21,22 +21,42 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-function PegboardBaseHelper({ width, height, pitch }: { width: number; height: number; pitch: number }) {
+function PedestalStandHelper({
+  width,
+  height,
+  depth,
+  pitch,
+  explodedSpacing,
+}: {
+  width: number;
+  height: number;
+  depth: number;
+  pitch: number;
+  explodedSpacing: number;
+}) {
   const sizeX = width * pitch;
-  const sizeY = height * pitch;
+  const totalDepth = depth * (pitch + explodedSpacing);
+  const radius = Math.max(sizeX, totalDepth) * 0.58;
+  const posY = -(height * pitch) / 2 - pitch * 0.5;
 
   return (
-    <group position={[0, 0, -pitch * 0.5]}>
-      {/* Placa base translúcida */}
-      <mesh position={[0, 0, -1]}>
-        <boxGeometry args={[sizeX + 8, sizeY + 8, 2]} />
-        <meshStandardMaterial color="#18181B" roughness={0.7} />
+    <group position={[0, posY, 0]}>
+      {/* Pedestal Circular Translúcido com Acabamento Premium (Estilo Beads3D) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+        <cylinderGeometry args={[radius, radius + 3, 2.5, 48]} />
+        <meshStandardMaterial
+          color="#27272A"
+          roughness={0.4}
+          metalness={0.2}
+          transparent
+          opacity={0.85}
+        />
       </mesh>
-      {/* Linha da borda */}
-      <gridHelper
-        args={[Math.max(sizeX, sizeY) + 10, Math.max(width, height), '#FACC15', '#3F3F46']}
-        rotation={[Math.PI / 2, 0, 0]}
-      />
+      {/* Anel de Realce Âmbar / Dourado */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1.3, 0]}>
+        <ringGeometry args={[radius - 1.5, radius, 48]} />
+        <meshBasicMaterial color="#FACC15" transparent opacity={0.35} />
+      </mesh>
     </group>
   );
 }
@@ -75,13 +95,13 @@ export function Viewport3D() {
         <Canvas
           shadows
           frameloop="demand"
-          camera={{ position: [0, -42, 45], fov: 38, up: [0, 0, 1] }}
+          camera={{ position: [0, 8, 85], fov: 38 }}
           className="w-full h-full"
         >
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[60, -80, 100]} intensity={1.3} castShadow />
-          <directionalLight position={[-60, 80, -40]} intensity={0.4} />
-          <pointLight position={[0, 0, 80]} intensity={0.5} />
+          <ambientLight intensity={0.85} />
+          <directionalLight position={[40, 60, 80]} intensity={1.3} castShadow />
+          <directionalLight position={[-40, -30, -50]} intensity={0.4} />
+          <pointLight position={[0, 20, 60]} intensity={0.4} />
 
           <Suspense fallback={null}>
             <Center top={false}>
@@ -89,10 +109,12 @@ export function Viewport3D() {
                 <>
                   <BeadRenderer3D grid3D={grid3D} />
                   <SupportRods3D grid3D={grid3D} explodedSpacing={explodedSpacing} />
-                  <PegboardBaseHelper
+                  <PedestalStandHelper
                     width={grid3D.width}
                     height={grid3D.height}
+                    depth={grid3D.layers.length}
                     pitch={grid3D.pitchMm || 2.6}
+                    explodedSpacing={explodedSpacing}
                   />
                 </>
               )}

@@ -19,14 +19,15 @@ export function SupportRods3D({
   const pitch = grid3D.pitchMm || 2.6;
   const halfW = grid3D.width / 2;
   const halfH = grid3D.height / 2;
+  const halfD = grid3D.layers.length / 2;
 
   const rodMeshes = useMemo(() => {
     if (!rods || rods.length === 0 || !showRods) return [];
 
     return rods.map((rod) => {
       const radius = Math.min(pitch * 0.18, (rod.diameterMm || 2.0) / 2);
-      const startPosZ = rod.startZ * (pitch + explodedSpacing);
-      const endPosZ = rod.endZ * (pitch + explodedSpacing);
+      const startPosZ = (rod.startZ - halfD + 0.5) * (pitch + explodedSpacing);
+      const endPosZ = (rod.endZ - halfD + 0.5) * (pitch + explodedSpacing);
       const height = Math.max(pitch, endPosZ - startPosZ + pitch * 0.95);
       const centerZ = (startPosZ + endPosZ) / 2;
 
@@ -42,7 +43,7 @@ export function SupportRods3D({
         height,
       };
     });
-  }, [rods, showRods, pitch, halfW, halfH, explodedSpacing]);
+  }, [rods, showRods, pitch, halfW, halfH, halfD, explodedSpacing]);
 
   if (!showRods || rodMeshes.length === 0) return null;
 
