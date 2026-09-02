@@ -107,64 +107,68 @@ export class Model3DLoader {
       console.warn('Parser Bambu 3MF falhou, usando ThreeMFLoader fallback:', bambuErr);
     }
 
-    // Fallback: ThreeMFLoader padrão
-    const loader = new ThreeMFLoader();
-    const group = loader.parse(buffer);
+    // Fallback: ThreeMFLoader padrão com tratamento de erros
+    try {
+      const loader = new ThreeMFLoader();
+      const group = loader.parse(buffer);
 
-    const positionsArr: number[] = [];
-    const colorsArr: number[] = [];
+      const positionsArr: number[] = [];
+      const colorsArr: number[] = [];
 
-    group.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        const geom = mesh.geometry;
-        const pos = geom.attributes.position;
-        const col = geom.attributes.color;
+      group.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          const geom = mesh.geometry;
+          const pos = geom.attributes.position;
+          const col = geom.attributes.color;
 
-        let meshRgb = { r: 0.8, g: 0.3, b: 0.3 };
-        if (mesh.material) {
-          const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-          if ((mat as any).color) {
-            meshRgb = {
-              r: (mat as any).color.r,
-              g: (mat as any).color.g,
-              b: (mat as any).color.b,
-            };
+          let meshRgb = { r: 0.8, g: 0.3, b: 0.3 };
+          if (mesh.material) {
+            const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+            if ((mat as any).color) {
+              meshRgb = {
+                r: (mat as any).color.r,
+                g: (mat as any).color.g,
+                b: (mat as any).color.b,
+              };
+            }
+          }
+
+          for (let i = 0; i < pos.count; i++) {
+            positionsArr.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+            if (col) {
+              colorsArr.push(col.getX(i), col.getY(i), col.getZ(i));
+            } else {
+              colorsArr.push(meshRgb.r, meshRgb.g, meshRgb.b);
+            }
           }
         }
+      });
 
-        for (let i = 0; i < pos.count; i++) {
-          positionsArr.push(pos.getX(i), pos.getY(i), pos.getZ(i));
-          if (col) {
-            colorsArr.push(col.getX(i), col.getY(i), col.getZ(i));
-          } else {
-            colorsArr.push(meshRgb.r, meshRgb.g, meshRgb.b);
-          }
+      const positions = new Float32Array(positionsArr);
+      const colors = new Float32Array(colorsArr);
+
+      const rawVoxels = this.engine.voxelizeTriangleMesh(
+        positions,
+        undefined,
+        colors,
+        { width: options.width, height: options.height, depth: options.depth }
+      );
+
+      return this.engine.buildFromRawVoxels(
+        rawVoxels,
+        options.width,
+        options.height,
+        options.depth,
+        {
+          fillMode: options.fillMode,
+          wallThickness: options.wallThickness || 1,
+          pitchMm: options.pitchMm || 2.6,
         }
-      }
-    });
-
-    const positions = new Float32Array(positionsArr);
-    const colors = new Float32Array(colorsArr);
-
-    const rawVoxels = this.engine.voxelizeTriangleMesh(
-      positions,
-      undefined,
-      colors,
-      { width: options.width, height: options.height, depth: options.depth }
-    );
-
-    return this.engine.buildFromRawVoxels(
-      rawVoxels,
-      options.width,
-      options.height,
-      options.depth,
-      {
-        fillMode: options.fillMode,
-        wallThickness: options.wallThickness || 1,
-        pitchMm: options.pitchMm || 2.6,
-      }
-    );
+      );
+    } catch (fallbackErr: any) {
+      throw new Error(`Não foi possível processar o arquivo 3MF: ${fallbackErr.message || fallbackErr}`);
+    }
   }
 
   /**

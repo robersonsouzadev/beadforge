@@ -24,30 +24,37 @@ export class Bambu3MFParser {
     const projectSettingsFile = zipContent.file('Metadata/project_settings.config');
     if (projectSettingsFile) {
       try {
-        const json = JSON.parse(await projectSettingsFile.async('text'));
+        const text = await projectSettingsFile.async('text');
+        const json = JSON.parse(text);
         if (Array.isArray(json.filament_colour) && json.filament_colour.length > 0) {
-          filamentColors = json.filament_colour;
+          filamentColors = json.filament_colour.filter((c: string) => /^#[0-9A-Fa-f]{6}$/.test(c));
         }
-      } catch (_) {}
+      } catch (_) {
+        const text = await projectSettingsFile.async('text');
+        const hexes = text.match(/#[0-9A-Fa-f]{6}/g);
+        if (hexes) filamentColors = [...new Set(hexes)];
+      }
     }
 
     if (filamentColors.length === 0) {
       const sliceInfoFile = zipContent.file('Metadata/slice_info.config');
       if (sliceInfoFile) {
         const text = await sliceInfoFile.async('text');
-        const raw = text.match(/color\s*=\s*"#([0-9a-fA-F]{6,8})"/gi);
+        const raw = text.match(/color\s*=\s*"#([0-9a-fA-F]{6,8})"/gi) || text.match(/filament_colour="([^"]+)"/gi);
         if (raw) {
-          filamentColors = raw.map((m) => {
-            const hex = m.match(/#[0-9a-fA-F]{6,8}/);
-            return hex ? hex[0] : '';
-          }).filter(Boolean);
+          filamentColors = raw
+            .map((m) => {
+              const hex = m.match(/#[0-9a-fA-F]{6}/);
+              return hex ? hex[0] : '';
+            })
+            .filter(Boolean);
         }
       }
     }
 
     // Paleta padrão caso não haja metadados de filamento
     if (filamentColors.length === 0) {
-      filamentColors = ['#9D9D9D', '#000000', '#FCCD87', '#FFFFFF', '#FBF137'];
+      filamentColors = ['#DE4343', '#000000', '#FFFFFF', '#9D9D9D', '#FCCD87', '#FBF137'];
     }
 
     // 2. Extrair matrizes de posicionamento das partes em Metadata/model_settings.config
@@ -88,115 +95,149 @@ export class Bambu3MFParser {
       }
     }
 
-    // 3. Ler XML 3D/3dmodel.model
-    const modelFile = zipContent.file('3D/3dmodel.model');
-    if (!modelFile) return null;
-    const modelXml = await modelFile.async('text');
-
-    // Parsear componentes (montagem)
+    // 3. Extrair transformações de montagem e componentes em 3D/3dmodel.model
     const componentOffsets = new Map<string, THREE.Matrix4>();
-    const compRegex = /<component\s+objectid="(\d+)"\s+transform="([^"]+)"/gi;
-    let cm;
-    while ((cm = compRegex.exec(modelXml)) !== null) {
-      const objId = cm[1];
-      const vals = cm[2].split(' ').map(parseFloat);
-      if (vals.length === 12) {
-        const matrix = new THREE.Matrix4();
-        matrix.set(
-          vals[0], vals[1], vals[2], vals[9],
-          vals[3], vals[4], vals[5], vals[10],
-          vals[6], vals[7], vals[8], vals[11],
-          0, 0, 0, 1
-        );
-        componentOffsets.set(objId, matrix);
+    const buildItemTransforms = new Map<string, THREE.Matrix4>();
+
+    const mainModelFile = zipContent.file('3D/3dmodel.model');
+    if (mainModelFile) {
+      const modelXml = await mainModelFile.async('text');
+
+      // Itens de build: <item objectid="2" transform="..." />
+      const itemRegex = /<item\s+objectid="(\d+)"[^>]*transform="([^"]+)"/gi;
+      let im;
+      while ((im = itemRegex.exec(modelXml)) !== null) {
+        const objId = im[1];
+        const vals = im[2].split(' ').map(parseFloat);
+        if (vals.length === 12) {
+          const matrix = new THREE.Matrix4();
+          matrix.set(
+            vals[0], vals[1], vals[2], vals[9],
+            vals[3], vals[4], vals[5], vals[10],
+            vals[6], vals[7], vals[8], vals[11],
+            0, 0, 0, 1
+          );
+          buildItemTransforms.set(objId, matrix);
+        }
+      }
+
+      // Componentes: <component objectid="1" transform="..." />
+      const compRegex = /<component(?:\s+p:path="[^"]+")?\s+objectid="(\d+)"[^>]*(?:transform="([^"]+)")?/gi;
+      let cm;
+      while ((cm = compRegex.exec(modelXml)) !== null) {
+        const objId = cm[1];
+        const trans = cm[2];
+        if (trans) {
+          const vals = trans.split(' ').map(parseFloat);
+          if (vals.length === 12) {
+            const matrix = new THREE.Matrix4();
+            matrix.set(
+              vals[0], vals[1], vals[2], vals[9],
+              vals[3], vals[4], vals[5], vals[10],
+              vals[6], vals[7], vals[8], vals[11],
+              0, 0, 0, 1
+            );
+            componentOffsets.set(objId, matrix);
+          }
+        }
       }
     }
 
-    // Parsear objetos de malha
+    // 4. Coletar todos os arquivos .model presentes no pacote (monolíticos ou multi-objeto)
+    const modelFiles: { name: string; text: string }[] = [];
+    for (const [filename, file] of Object.entries(zipContent.files)) {
+      if (filename.toLowerCase().endsWith('.model') && !file.dir) {
+        const text = await file.async('text');
+        modelFiles.push({ name: filename, text });
+      }
+    }
+
+    if (modelFiles.length === 0) return null;
+
+    // 5. Processar todas as malhas de todos os arquivos .model
     const allPositions: number[] = [];
     const allColors: number[] = [];
 
-    const objRegex = /<object\s+id="(\d+)"(?:\s+type="([^"]+)")?[^>]*>([\s\S]*?)<\/object>/gi;
-    let om;
+    for (const { text } of modelFiles) {
+      const objRegex = /<object\s+id="(\d+)"(?:\s+type="([^"]+)")?[^>]*>([\s\S]*?)<\/object>/gi;
+      let om;
 
-    while ((om = objRegex.exec(modelXml)) !== null) {
-      const objId = om[1];
-      const objType = om[2];
-      const body = om[3];
+      while ((om = objRegex.exec(text)) !== null) {
+        const objId = om[1];
+        const objType = om[2];
+        const body = om[3];
 
-      // Ignorar objetos não-modelo ou auxiliares de encaixe plástico interno se não forem visíveis
-      if (objType === 'other') continue;
-      if (!body.includes('<mesh>')) continue;
+        if (objType === 'other') continue;
+        if (!body.includes('<mesh>')) continue;
 
-      // Extrair vértices
-      const vertices: [number, number, number][] = [];
-      const vRegex = /<vertex\s+x="([^"]+)"\s+y="([^"]+)"\s+z="([^"]+)"/gi;
-      let vm;
-      while ((vm = vRegex.exec(body)) !== null) {
-        vertices.push([parseFloat(vm[1]), parseFloat(vm[2]), parseFloat(vm[3])]);
-      }
-
-      if (vertices.length === 0) continue;
-
-      // Matriz de transformação da peça
-      const compMatrix = componentOffsets.get(objId);
-      const partMatrix = partMatrices.get(objId);
-      const activeMatrix = compMatrix || partMatrix;
-
-      // Cor padrão do objeto base
-      const defaultExtruder = objectExtruders.get(objId) || 1;
-      const defaultHex = filamentColors[defaultExtruder - 1] || filamentColors[0];
-
-      // Converter Hex para RGB normalizado 0..1
-      const defaultRgb = hexToRgb(defaultHex);
-
-      // Ler triângulos e cores pintadas
-      const tRegex = /<triangle\s+v1="(\d+)"\s+v2="(\d+)"\s+v3="(\d+)"(?:\s+paint_color="([^"]+)")?[^>]*\/>/gi;
-      let tm;
-
-      const vec = new THREE.Vector3();
-
-      while ((tm = tRegex.exec(body)) !== null) {
-        const v1 = parseInt(tm[1], 10);
-        const v2 = parseInt(tm[2], 10);
-        const v3 = parseInt(tm[3], 10);
-        const paintColor = tm[4];
-
-        if (v1 >= vertices.length || v2 >= vertices.length || v3 >= vertices.length) continue;
-
-        let triRgb = defaultRgb;
-
-        if (paintColor) {
-          // Decodificar índice do filamento no Bambu Studio
-          if (paintColor.endsWith('C')) {
-            const hexDigit = parseInt(paintColor.slice(0, -1), 16);
-            const filamentIdx = hexDigit + 1; // 0C -> 1, 1C -> 2, etc.
-            if (filamentIdx >= 1 && filamentIdx <= filamentColors.length) {
-              triRgb = hexToRgb(filamentColors[filamentIdx - 1]);
-            }
-          } else if (paintColor === '8') {
-            // Unpainted: herda cor base do objeto
-            triRgb = defaultRgb;
-          } else {
-            // Dígito de filamento direto
-            const idx = parseInt(paintColor[0], 16) || parseInt(paintColor[0], 10);
-            if (idx >= 1 && idx <= filamentColors.length) {
-              triRgb = hexToRgb(filamentColors[idx - 1]);
-            }
-          }
+        // Extrair vértices
+        const vertices: [number, number, number][] = [];
+        const vRegex = /<vertex\s+x="([^"]+)"\s+y="([^"]+)"\s+z="([^"]+)"/gi;
+        let vm;
+        while ((vm = vRegex.exec(body)) !== null) {
+          vertices.push([parseFloat(vm[1]), parseFloat(vm[2]), parseFloat(vm[3])]);
         }
 
-        // Adicionar os 3 vértices do triângulo
-        const triIndices = [v1, v2, v3];
-        for (const idx of triIndices) {
-          const [vx, vy, vz] = vertices[idx];
-          vec.set(vx, vy, vz);
+        if (vertices.length === 0) continue;
+
+        // Matriz de transformação unificada da peça
+        let activeMatrix: THREE.Matrix4 | undefined =
+          componentOffsets.get(objId) || partMatrices.get(objId);
+
+        // Se houver transformação global de build item, combinar
+        for (const [, itemMat] of buildItemTransforms.entries()) {
           if (activeMatrix) {
-            vec.applyMatrix4(activeMatrix);
+            activeMatrix = activeMatrix.clone().multiply(itemMat);
+          } else {
+            activeMatrix = itemMat.clone();
+          }
+          break;
+        }
+
+        // Cor padrão do objeto base
+        const defaultExtruder = objectExtruders.get(objId) || 1;
+        const defaultHex = filamentColors[defaultExtruder - 1] || filamentColors[0];
+        const defaultRgb = hexToRgb(defaultHex);
+
+        // Ler triângulos e cores pintadas
+        const tRegex = /<triangle\s+v1="(\d+)"\s+v2="(\d+)"\s+v3="(\d+)"(?:\s+paint_color="([^"]+)")?[^>]*\/>/gi;
+        let tm;
+
+        const vec = new THREE.Vector3();
+
+        while ((tm = tRegex.exec(body)) !== null) {
+          const v1 = parseInt(tm[1], 10);
+          const v2 = parseInt(tm[2], 10);
+          const v3 = parseInt(tm[3], 10);
+          const paintColor = tm[4];
+
+          if (v1 >= vertices.length || v2 >= vertices.length || v3 >= vertices.length) continue;
+
+          let triRgb = defaultRgb;
+
+          if (paintColor) {
+            const filIdx = extractFilamentIndex(
+              paintColor,
+              filamentColors.length,
+              defaultExtruder - 1
+            );
+            if (filIdx >= 0 && filIdx < filamentColors.length) {
+              triRgb = hexToRgb(filamentColors[filIdx]);
+            }
           }
 
-          allPositions.push(vec.x, vec.y, vec.z);
-          allColors.push(triRgb.r, triRgb.g, triRgb.b);
+          // Adicionar os 3 vértices do triângulo
+          const triIndices = [v1, v2, v3];
+          for (const idx of triIndices) {
+            const [vx, vy, vz] = vertices[idx];
+            vec.set(vx, vy, vz);
+            if (activeMatrix) {
+              vec.applyMatrix4(activeMatrix);
+            }
+
+            allPositions.push(vec.x, vec.y, vec.z);
+            allColors.push(triRgb.r, triRgb.g, triRgb.b);
+          }
         }
       }
     }
@@ -219,4 +260,47 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
     g: parseInt(clean.slice(2, 4), 16) / 255,
     b: parseInt(clean.slice(4, 6), 16) / 255,
   };
+}
+
+function extractFilamentIndex(
+  paintColor: string,
+  filamentCount: number,
+  defaultIndex: number
+): number {
+  if (!paintColor) return defaultIndex;
+
+  // Código direto simples de 1 ou 2 dígitos hexadecimais (ex: "0C", "1C", "2C", "3C")
+  if (paintColor.endsWith('C') && paintColor.length <= 3) {
+    const hex = parseInt(paintColor.slice(0, -1), 16);
+    if (!isNaN(hex) && hex < filamentCount) return hex;
+  }
+
+  // Se for dígito numérico simples
+  if (/^\d+$/.test(paintColor)) {
+    const val = parseInt(paintColor, 10);
+    if (val >= 1 && val <= filamentCount) return val - 1;
+    if (val < filamentCount) return val;
+  }
+
+  // Para strings compostas do Bambu Studio com patches de subdivisão:
+  // Contar a frequência dos dígitos hex correspondentes a índices de filamentos válidos
+  const counts = new Map<number, number>();
+  for (let i = 0; i < paintColor.length; i++) {
+    const char = paintColor[i];
+    const d = parseInt(char, 16);
+    if (!isNaN(d) && d < filamentCount) {
+      counts.set(d, (counts.get(d) || 0) + 1);
+    }
+  }
+
+  let bestIdx = defaultIndex;
+  let maxCount = 0;
+  for (const [idx, count] of counts.entries()) {
+    if (count > maxCount) {
+      maxCount = count;
+      bestIdx = idx;
+    }
+  }
+
+  return bestIdx;
 }
