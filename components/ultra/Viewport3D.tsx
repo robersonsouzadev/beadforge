@@ -105,7 +105,9 @@ export function Viewport3D() {
     controls.update();
   };
 
-  const handleResetCamera = (view: 'front' | 'iso' | 'side' = 'iso') => {
+  const handleResetCamera = (
+    view: 'front' | 'back' | 'left' | 'right' | 'top' | 'iso' = 'iso'
+  ) => {
     if (!controlsRef.current) return;
     const controls = controlsRef.current;
     const camera = controls.object;
@@ -114,11 +116,17 @@ export function Viewport3D() {
     controls.target.set(0, 0, 0);
 
     if (view === 'front') {
-      camera.position.set(0, 5, 230);
-    } else if (view === 'side') {
-      camera.position.set(230, 5, 0);
+      camera.position.set(0, 8, -230); // Frente (Rosto/Máscara)
+    } else if (view === 'back') {
+      camera.position.set(0, 8, 230); // Costas / Capuz
+    } else if (view === 'left') {
+      camera.position.set(-230, 8, 0); // Lado Esquerdo
+    } else if (view === 'right') {
+      camera.position.set(230, 8, 0); // Lado Direito
+    } else if (view === 'top') {
+      camera.position.set(0, 240, 0); // Vista Superior
     } else {
-      camera.position.set(130, 90, 180);
+      camera.position.set(120, 80, -180); // Isométrica Frontal Padrão
     }
 
     camera.lookAt(0, 0, 0);
@@ -133,7 +141,7 @@ export function Viewport3D() {
           <Canvas
             shadows
             frameloop="demand"
-            camera={{ position: [0, 10, 230], fov: 42 }}
+            camera={{ position: [120, 80, -180], fov: 42 }}
             className="w-full h-full"
           >
             <ambientLight intensity={0.85} />
@@ -169,49 +177,85 @@ export function Viewport3D() {
             />
           </Canvas>
 
-          {/* Botões Flutuantes de Zoom e Enquadramento da Câmera 3D */}
+          {/* Painel Flutuante de Câmera e Atalhos de Visualização (Frente, Atrás, Lados, Topo) */}
           <div className="absolute top-16 right-4 z-10 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-xl p-1.5 flex flex-col gap-1.5 shadow-2xl">
-            <button
-              type="button"
-              onClick={() => handleZoom(0.8)}
-              title="Aproximar (Zoom In)"
-              className="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white transition"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleZoom(1.25)}
-              title="Afastar (Zoom Out)"
-              className="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white transition"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleResetCamera('iso')}
-              title="Enquadrar Escultura Completa"
-              className="p-2 rounded-lg bg-zinc-800/80 hover:bg-amber-400 hover:text-zinc-950 text-amber-400 transition"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => handleZoom(0.8)}
+                title="Aproximar (Zoom In)"
+                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white transition"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleZoom(1.25)}
+                title="Afastar (Zoom Out)"
+                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white transition"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetCamera('iso')}
+                title="Enquadrar Escultura Completa"
+                className="p-1.5 rounded-lg bg-zinc-800/80 hover:bg-amber-400 hover:text-zinc-950 text-amber-400 transition"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
             <div className="h-[1px] bg-zinc-800 my-0.5" />
-            <button
-              type="button"
-              onClick={() => handleResetCamera('front')}
-              title="Vista Frontal"
-              className="px-1.5 py-1 rounded text-[10px] font-mono font-bold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition"
-            >
-              Frente
-            </button>
-            <button
-              type="button"
-              onClick={() => handleResetCamera('side')}
-              title="Vista Lateral"
-              className="px-1.5 py-1 rounded text-[10px] font-mono font-bold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition"
-            >
-              Lado
-            </button>
+            <div className="grid grid-cols-2 gap-1 text-[10px] font-mono font-bold">
+              <button
+                type="button"
+                onClick={() => handleResetCamera('front')}
+                title="Vista Frontal (Rosto)"
+                className="px-1.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition text-center"
+              >
+                Frente
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetCamera('back')}
+                title="Vista Traseira (Costas)"
+                className="px-1.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition text-center"
+              >
+                Atrás
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetCamera('left')}
+                title="Lado Esquerdo"
+                className="px-1.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition text-center"
+              >
+                Esq.
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetCamera('right')}
+                title="Lado Direito"
+                className="px-1.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition text-center"
+              >
+                Dir.
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetCamera('top')}
+                title="Vista Superior (Topo)"
+                className="px-1.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition text-center"
+              >
+                Topo
+              </button>
+              <button
+                type="button"
+                onClick={() => handleResetCamera('iso')}
+                title="Vista Isométrica 3D"
+                className="px-1.5 py-1 rounded bg-amber-400/20 text-amber-400 hover:bg-amber-400 hover:text-zinc-950 transition text-center"
+              >
+                Iso
+              </button>
+            </div>
           </div>
         </>
       ) : currentLayer ? (

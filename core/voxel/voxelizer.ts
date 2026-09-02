@@ -316,7 +316,7 @@ export class VoxelEngine {
 
     const voxelMap = new Map<
       string,
-      { x: number; y: number; z: number; rgb: { r: number; g: number; b: number }; weight: number }
+      { x: number; y: number; z: number; rgb: { r: number; g: number; b: number }; weight: number; surfaceY: number }
     >();
 
     const numTriangles = indices ? indices.length / 3 : positions.length / 9;
@@ -385,8 +385,18 @@ export class VoxelEngine {
           const weight = getVoxelVisualWeight(rgb);
           const existing = voxelMap.get(key);
 
-          if (!existing || weight > existing.weight) {
-            voxelMap.set(key, { x: vx, y: vy, z: vz, rgb, weight });
+          if (!existing) {
+            voxelMap.set(key, { x: vx, y: vy, z: vz, rgb, weight, surfaceY: py });
+          } else {
+            // Se a nova amostra está mais à frente na casca externa visível:
+            if (py < existing.surfaceY - stepY * 0.4) {
+              voxelMap.set(key, { x: vx, y: vy, z: vz, rgb, weight, surfaceY: py });
+            } else if (Math.abs(py - existing.surfaceY) <= stepY * 0.4) {
+              // Mesma casca externa: prevalece maior peso visual ou detalhe de primeiro plano
+              if (weight >= existing.weight) {
+                voxelMap.set(key, { x: vx, y: vy, z: vz, rgb, weight, surfaceY: py });
+              }
+            }
           }
         }
       }
