@@ -351,10 +351,10 @@ export class VoxelEngine {
         };
       }
 
-      // Amostragem por Baricêntricas sobre o triângulo com resolução fina
+      // Amostragem por Baricêntricas sobre o triângulo com resolução fina 4x (precisão milimétrica de impressora 3D)
       const edge1Len = Math.hypot(v1x - v0x, v1y - v0y, v1z - v0z);
       const edge2Len = Math.hypot(v2x - v0x, v2y - v0y, v2z - v0z);
-      const samples = Math.max(3, Math.ceil(Math.max(edge1Len / stepX, edge2Len / stepY) * 3));
+      const samples = Math.max(4, Math.ceil(Math.max(edge1Len / stepX, edge2Len / stepY) * 4));
 
       for (let u = 0; u <= samples; u++) {
         for (let v = 0; u + v <= samples; v++) {
@@ -402,7 +402,7 @@ export class VoxelEngine {
 
 /**
  * Calcula o peso visual do voxel para que detalhes intencionais da superfície (olhos brancos, máscara vermelha, pele, cinto)
- * prevaleçam com 100% de nitidez sobre o fundo escuro/preto não pintado.
+ * prevaleçam com 100% de nitidez sobre o fundo escuro/preto não pintado, mantendo contornos finos nítidos.
  */
 function getVoxelVisualWeight(rgb: { r: number; g: number; b: number }): number {
   const maxC = Math.max(rgb.r, rgb.g, rgb.b);
@@ -416,7 +416,7 @@ function getVoxelVisualWeight(rgb: { r: number; g: number; b: number }): number 
   }
 
   // Cores vivas e saturadas (Vermelho da máscara, Amarelo do cinto, Pele/Pêssego):
-  if (saturation > 35) {
+  if (saturation > 30) {
     return 500 + saturation;
   }
 
