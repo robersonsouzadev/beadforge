@@ -147,8 +147,8 @@ export class VoxelEngine {
     const offsetY = Math.floor((targetHeight - scaledH) / 2);
     const offsetZ = 0; // Base apoiada na primeira camada (Z = 0)
 
-    // Mapa 3D esparso temporário [z][y][x]
-    const voxelMap = new Map<string, { r: number; g: number; b: number }>();
+    // Mapa 3D esparso temporário [z][y][x] com fusão por prioridade de peso visual
+    const voxelMap = new Map<string, { rgb: { r: number; g: number; b: number }; weight: number }>();
 
     for (const v of rawVoxels) {
       const nx = Math.floor((v.x - minX) * scaleFactor) + offsetX;
@@ -157,7 +157,11 @@ export class VoxelEngine {
 
       if (nx >= 0 && nx < targetWidth && ny >= 0 && ny < targetHeight && nz >= 0 && nz < targetDepth) {
         const key = `${nx},${ny},${nz}`;
-        voxelMap.set(key, v.rgb);
+        const weight = getVoxelVisualWeight(v.rgb);
+        const existing = voxelMap.get(key);
+        if (!existing || weight > existing.weight) {
+          voxelMap.set(key, { rgb: v.rgb, weight });
+        }
       }
     }
 
@@ -165,16 +169,16 @@ export class VoxelEngine {
     const finalVoxelMap = new Map<string, { r: number; g: number; b: number }>();
 
     if (fillMode === 'hollow') {
-      for (const [key, rgb] of voxelMap.entries()) {
+      for (const [key, item] of voxelMap.entries()) {
         const [x, y, z] = key.split(',').map(Number);
         const isExposed = this.isVoxelExposed(x, y, z, voxelMap, targetWidth, targetHeight, targetDepth, wallThickness);
         if (isExposed) {
-          finalVoxelMap.set(key, rgb);
+          finalVoxelMap.set(key, item.rgb);
         }
       }
     } else {
-      for (const [key, rgb] of voxelMap.entries()) {
-        finalVoxelMap.set(key, rgb);
+      for (const [key, item] of voxelMap.entries()) {
+        finalVoxelMap.set(key, item.rgb);
       }
     }
 
@@ -310,7 +314,10 @@ export class VoxelEngine {
     const stepY = rangeY / resolution.height;
     const stepZ = rangeZ / resolution.depth;
 
-    const voxelSet = new Set<string>();
+    const voxelMap = new Map<
+      string,
+      { x: number; y: number; z: number; rgb: { r: number; g: number; b: number }; weight: number }
+    >();
 
     const numTriangles = indices ? indices.length / 3 : positions.length / 9;
 
@@ -344,10 +351,10 @@ export class VoxelEngine {
         };
       }
 
-      // Amostragem por Baricêntricas sobre o triângulo
+      // Amostragem por Baricêntricas sobre o triângulo com resolução fina
       const edge1Len = Math.hypot(v1x - v0x, v1y - v0y, v1z - v0z);
       const edge2Len = Math.hypot(v2x - v0x, v2y - v0y, v2z - v0z);
-      const samples = Math.max(2, Math.ceil(Math.max(edge1Len / stepX, edge2Len / stepY) * 2));
+      const samples = Math.max(3, Math.ceil(Math.max(edge1Len / stepX, edge2Len / stepY) * 3));
 
       for (let u = 0; u <= samples; u++) {
         for (let v = 0; u + v <= samples; v++) {
@@ -375,14 +382,49 @@ export class VoxelEngine {
           }
 
           const key = `${vx},${vy},${vz}`;
-          if (!voxelSet.has(key)) {
-            voxelSet.add(key);
-            rawVoxels.push({ x: vx, y: vy, z: vz, rgb });
+          const weight = getVoxelVisualWeight(rgb);
+          const existing = voxelMap.get(key);
+
+          if (!existing || weight > existing.weight) {
+            voxelMap.set(key, { x: vx, y: vy, z: vz, rgb, weight });
           }
         }
       }
     }
 
+    for (const item of voxelMap.values()) {
+      rawVoxels.push({ x: item.x, y: item.y, z: item.z, rgb: item.rgb });
+    }
+
     return rawVoxels;
   }
+}
+
+/**
+ * Calcula o peso visual do voxel para que detalhes intencionais da superfície (olhos brancos, máscara vermelha, pele, cinto)
+ * prevaleçam com 100% de nitidez sobre o fundo escuro/preto não pintado.
+ */
+function getVoxelVisualWeight(rgb: { r: number; g: number; b: number }): number {
+  const maxC = Math.max(rgb.r, rgb.g, rgb.b);
+  const minC = Math.min(rgb.r, rgb.g, rgb.b);
+  const saturation = maxC - minC;
+  const brightness = (rgb.r + rgb.g + rgb.b) / 3;
+
+  // Branco Puro (olhos, detalhes luminosos): prioridade máxima
+  if (rgb.r > 200 && rgb.g > 200 && rgb.b > 200) {
+    return 1000;
+  }
+
+  // Cores vivas e saturadas (Vermelho da máscara, Amarelo do cinto, Pele/Pêssego):
+  if (saturation > 35) {
+    return 500 + saturation;
+  }
+
+  // Cores claras e tons médios:
+  if (brightness > 60) {
+    return 100 + brightness * 0.1;
+  }
+
+  // Fundo preto ou cinza escuro base:
+  return 1;
 }
