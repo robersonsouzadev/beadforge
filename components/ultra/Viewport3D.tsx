@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Center } from '@react-three/drei';
 import { useEditorStore } from '@/store/editor-store';
@@ -19,6 +19,11 @@ import {
   PaintBucket,
   Pipette,
   ChevronDown,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2,
+  Compass,
 } from 'lucide-react';
 
 function PedestalStandHelper({
@@ -88,47 +93,127 @@ export function Viewport3D() {
 
   const currentLayer = grid3D ? grid3D.layers[activeLayerZ] || grid3D.layers[0] : null;
 
+  const controlsRef = useRef<any>(null);
+
+  const handleZoom = (delta: number) => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    const camera = controls.object;
+    if (!camera) return;
+
+    camera.position.multiplyScalar(delta);
+    controls.update();
+  };
+
+  const handleResetCamera = (view: 'front' | 'iso' | 'side' = 'iso') => {
+    if (!controlsRef.current) return;
+    const controls = controlsRef.current;
+    const camera = controls.object;
+    if (!camera) return;
+
+    controls.target.set(0, 0, 0);
+
+    if (view === 'front') {
+      camera.position.set(0, 5, 230);
+    } else if (view === 'side') {
+      camera.position.set(230, 5, 0);
+    } else {
+      camera.position.set(130, 90, 180);
+    }
+
+    camera.lookAt(0, 0, 0);
+    controls.update();
+  };
+
   return (
     <div className="relative flex-1 h-full w-full bg-zinc-950 overflow-hidden select-none">
       {/* Visualização Central: Ou Viewport 3D ou Molde 2D da Camada */}
       {centerViewMode === '3d' ? (
-        <Canvas
-          shadows
-          frameloop="demand"
-          camera={{ position: [0, 8, 85], fov: 38 }}
-          className="w-full h-full"
-        >
-          <ambientLight intensity={0.85} />
-          <directionalLight position={[40, 60, 80]} intensity={1.3} castShadow />
-          <directionalLight position={[-40, -30, -50]} intensity={0.4} />
-          <pointLight position={[0, 20, 60]} intensity={0.4} />
+        <>
+          <Canvas
+            shadows
+            frameloop="demand"
+            camera={{ position: [0, 10, 230], fov: 42 }}
+            className="w-full h-full"
+          >
+            <ambientLight intensity={0.85} />
+            <directionalLight position={[40, 60, 80]} intensity={1.3} castShadow />
+            <directionalLight position={[-40, -30, -50]} intensity={0.4} />
+            <pointLight position={[0, 20, 60]} intensity={0.4} />
 
-          <Suspense fallback={null}>
-            <Center top={false}>
-              {grid3D && (
-                <>
-                  <BeadRenderer3D grid3D={grid3D} />
-                  <SupportRods3D grid3D={grid3D} explodedSpacing={explodedSpacing} />
-                  <PedestalStandHelper
-                    width={grid3D.width}
-                    height={grid3D.height}
-                    depth={grid3D.layers.length}
-                    pitch={grid3D.pitchMm || 2.6}
-                    explodedSpacing={explodedSpacing}
-                  />
-                </>
-              )}
-            </Center>
-          </Suspense>
+            <Suspense fallback={null}>
+              <Center top={false}>
+                {grid3D && (
+                  <>
+                    <BeadRenderer3D grid3D={grid3D} />
+                    <SupportRods3D grid3D={grid3D} explodedSpacing={explodedSpacing} />
+                    <PedestalStandHelper
+                      width={grid3D.width}
+                      height={grid3D.height}
+                      depth={grid3D.layers.length}
+                      pitch={grid3D.pitchMm || 2.6}
+                      explodedSpacing={explodedSpacing}
+                    />
+                  </>
+                )}
+              </Center>
+            </Suspense>
 
-          <OrbitControls
-            makeDefault
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={8}
-            maxDistance={250}
-          />
-        </Canvas>
+            <OrbitControls
+              ref={controlsRef}
+              makeDefault
+              enableDamping
+              dampingFactor={0.08}
+              minDistance={2}
+              maxDistance={2500}
+            />
+          </Canvas>
+
+          {/* Botões Flutuantes de Zoom e Enquadramento da Câmera 3D */}
+          <div className="absolute top-16 right-4 z-10 bg-zinc-900/90 backdrop-blur-md border border-zinc-800 rounded-xl p-1.5 flex flex-col gap-1.5 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => handleZoom(0.8)}
+              title="Aproximar (Zoom In)"
+              className="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white transition"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleZoom(1.25)}
+              title="Afastar (Zoom Out)"
+              className="p-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-200 hover:text-white transition"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleResetCamera('iso')}
+              title="Enquadrar Escultura Completa"
+              className="p-2 rounded-lg bg-zinc-800/80 hover:bg-amber-400 hover:text-zinc-950 text-amber-400 transition"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+            <div className="h-[1px] bg-zinc-800 my-0.5" />
+            <button
+              type="button"
+              onClick={() => handleResetCamera('front')}
+              title="Vista Frontal"
+              className="px-1.5 py-1 rounded text-[10px] font-mono font-bold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition"
+            >
+              Frente
+            </button>
+            <button
+              type="button"
+              onClick={() => handleResetCamera('side')}
+              title="Vista Lateral"
+              className="px-1.5 py-1 rounded text-[10px] font-mono font-bold bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition"
+            >
+              Lado
+            </button>
+          </div>
+        </>
       ) : currentLayer ? (
         <div className="w-full h-full relative">
           <LayerCanvas2D
