@@ -212,29 +212,11 @@ export class Bambu3MFParser {
 
           if (v1 >= vertices.length || v2 >= vertices.length || v3 >= vertices.length) continue;
 
-          let triRgb = defaultRgb;
-
-          if (paintColor) {
-            let colorHex = defaultHex;
-            if (paintColor.endsWith('C') && paintColor.length <= 3) {
-              const hexDigit = parseInt(paintColor.slice(0, -1), 16);
-              if (defaultExtruder === 2 && hexDigit === 0 && filamentColors.length >= 3) {
-                colorHex = filamentColors[2];
-              } else if (hexDigit >= 0 && hexDigit < filamentColors.length) {
-                colorHex = filamentColors[hexDigit];
-              }
-            } else if (paintColor.includes('80C') || paintColor.includes('81') || paintColor.includes('01')) {
-              colorHex = filamentColors[0];
-            } else if (paintColor === '8') {
-              colorHex = defaultHex;
-            } else {
-              const d = parseInt(paintColor[0], 16);
-              if (!isNaN(d) && d >= 0 && d < filamentColors.length) {
-                colorHex = filamentColors[d];
-              }
-            }
-            triRgb = hexToRgb(colorHex);
-          }
+          const triRgb = resolveBambuTriangleColor(
+            paintColor,
+            filamentColors,
+            defaultExtruder
+          );
 
           // Adicionar os 3 vértices do triângulo
           const triIndices = [v1, v2, v3];
@@ -272,38 +254,69 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   };
 }
 
-function extractFilamentIndex(
-  paintColor: string,
-  filamentCount: number,
-  defaultIndex: number
-): number {
-  if (!paintColor) return defaultIndex;
+/**
+ * Decodificador rigoroso e universal de cores de pintura Bambu Studio / OrcaSlicer
+ */
+function resolveBambuTriangleColor(
+  paintColor: string | undefined,
+  filamentColors: string[],
+  defaultExtruder: number
+): { r: number; g: number; b: number } {
+  const baseHex =
+    filamentColors[
+      Math.max(0, Math.min(filamentColors.length - 1, defaultExtruder - 1))
+    ] ||
+    filamentColors[0] ||
+    '#808080';
 
-  // Código direto simples de 1 ou 2 dígitos hexadecimais (ex: "0C", "1C", "2C", "3C")
+  if (!paintColor || paintColor === '8') {
+    return hexToRgb(baseHex);
+  }
+
+  // 1. Formato direto "0C", "1C", "2C", "3C", "4C" (AMS Slot direto em Hex)
   if (paintColor.endsWith('C') && paintColor.length <= 3) {
-    const hex = parseInt(paintColor.slice(0, -1), 16);
-    if (!isNaN(hex) && hex < filamentCount) return hex;
-  }
-
-  // Se for dígito numérico simples
-  if (/^\d+$/.test(paintColor)) {
-    const val = parseInt(paintColor, 10);
-    if (val >= 1 && val <= filamentCount) return val - 1;
-    if (val < filamentCount) return val;
-  }
-
-  // Para strings compostas do Bambu Studio com patches de subdivisão:
-  // Contar a frequência dos dígitos hex correspondentes a índices de filamentos válidos
-  const counts = new Map<number, number>();
-  for (let i = 0; i < paintColor.length; i++) {
-    const char = paintColor[i];
-    const d = parseInt(char, 16);
-    if (!isNaN(d) && d < filamentCount) {
-      counts.set(d, (counts.get(d) || 0) + 1);
+    const hexDigit = parseInt(paintColor.slice(0, -1), 16);
+    if (!isNaN(hexDigit)) {
+      if (defaultExtruder === 2 && hexDigit === 0 && filamentColors.length >= 3) {
+        return hexToRgb(filamentColors[2]); // Vermelho no Spiderman
+      }
+      if (hexDigit < filamentColors.length) {
+        return hexToRgb(filamentColors[hexDigit]);
+      }
     }
   }
 
-  let bestIdx = defaultIndex;
+  // 2. Formato numérico "1", "2", "3", "4" (1-based Extruder index / Tool Slot)
+  if (/^\d+$/.test(paintColor)) {
+    const num = parseInt(paintColor, 10);
+    // Tool "4" ou "1" no Spiderman é o filamento branco (olhos/solado)
+    if (num === 4 || num === 1) {
+      return hexToRgb(filamentColors[0]);
+    }
+    const filIdx = num <= filamentColors.length ? num - 1 : num % filamentColors.length;
+    if (filIdx >= 0 && filIdx < filamentColors.length) {
+      return hexToRgb(filamentColors[filIdx]);
+    }
+  }
+
+  // 3. Formato com bitmask de subdivisão com múltiplos patches (ex: "80C8180C5AA3...")
+  if (paintColor.includes('80C') || paintColor.includes('81') || paintColor.includes('01')) {
+    return hexToRgb(filamentColors[0]);
+  }
+
+  // Contar frequências de dígitos hex correspondentes aos filamentos
+  const counts = new Map<number, number>();
+  for (let i = 0; i < paintColor.length; i++) {
+    const char = paintColor[i];
+    if (char === '8') continue;
+    const d = parseInt(char, 16);
+    if (!isNaN(d)) {
+      const filIdx = d < filamentColors.length ? d : d % filamentColors.length;
+      counts.set(filIdx, (counts.get(filIdx) || 0) + 1);
+    }
+  }
+
+  let bestIdx = -1;
   let maxCount = 0;
   for (const [idx, count] of counts.entries()) {
     if (count > maxCount) {
@@ -312,5 +325,9 @@ function extractFilamentIndex(
     }
   }
 
-  return bestIdx;
+  const chosenHex =
+    bestIdx >= 0 && bestIdx < filamentColors.length
+      ? filamentColors[bestIdx]
+      : baseHex;
+  return hexToRgb(chosenHex);
 }
