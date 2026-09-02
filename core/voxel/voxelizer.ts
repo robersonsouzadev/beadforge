@@ -359,9 +359,20 @@ export class VoxelEngine {
           const py = w0 * v0y + w1 * v1y + w2 * v2y;
           const pz = w0 * v0z + w1 * v1z + w2 * v2z;
 
-          const vx = Math.floor(((px - minX) / rangeX) * (resolution.width - 1));
-          const vy = Math.floor(((py - minY) / rangeY) * (resolution.height - 1));
-          const vz = Math.floor(((pz - minZ) / rangeZ) * (resolution.depth - 1));
+          // Modelos CAD/STL/3MF onde Z é a altura vertical:
+          // X = largura horizontal, Z = altura dos pés à cabeça, Y = camadas de frente para trás
+          const isCadZUp = rangeZ >= rangeY;
+          let vx: number, vy: number, vz: number;
+
+          if (isCadZUp) {
+            vx = Math.floor(((px - minX) / rangeX) * (resolution.width - 1));
+            vy = Math.floor(((maxZ - pz) / rangeZ) * (resolution.height - 1)); // Topo da cabeça no topo da grade
+            vz = Math.floor(((py - minY) / rangeY) * (resolution.depth - 1)); // Fatiamento de frente para trás
+          } else {
+            vx = Math.floor(((px - minX) / rangeX) * (resolution.width - 1));
+            vy = Math.floor(((maxY - py) / rangeY) * (resolution.height - 1));
+            vz = Math.floor(((pz - minZ) / rangeZ) * (resolution.depth - 1));
+          }
 
           const key = `${vx},${vy},${vz}`;
           if (!voxelSet.has(key)) {

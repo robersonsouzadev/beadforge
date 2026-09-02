@@ -150,21 +150,26 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
     const file = files[0];
     const lowerName = file.name.toLowerCase();
 
-    // Caso 2: Arquivo .3MF (Bambu Studio / PrusaSlicer)
+    // Caso 2: Arquivo .3MF (Bambu Studio / OrcaSlicer / PrusaSlicer)
     if (lowerName.endsWith('.3mf')) {
+      setSelectedFile(file);
+      setModel3DFileName(file.name);
+      setMultipartItems([]);
       setIsLoading(true);
       try {
-        const loader = new MultipartLoader(activePalette);
-        const parts = await loader.loadFrom3mf(file);
-        if (parts.length === 0) {
-          alert('Nenhum objeto 3D encontrado dentro do arquivo .3MF.');
-          return;
-        }
-        setModel3DFileName(file.name);
-        setMultipartItems(parts);
+        const loader = new Model3DLoader(activePalette);
+        const voxelGrid = await loader.loadFromFile(file, {
+          width: targetWidth,
+          height: targetHeight,
+          depth: targetDepth,
+          fillMode,
+          wallThickness,
+          pitchMm: 2.6,
+        });
+        setGrid3D(voxelGrid);
         if (isDrawer) handleClose();
       } catch (err: any) {
-        alert('Erro ao carregar arquivo .3MF: ' + err.message);
+        alert('Erro ao processar arquivo .3MF: ' + err.message);
       } finally {
         setIsLoading(false);
       }
