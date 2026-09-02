@@ -305,18 +305,6 @@ export class MultipartLoader {
           geom.applyMatrix4(currentPart.matrix);
         }
 
-        // Centralizar no plano horizontal X/Y (remover deslocamentos das mesas de impressão separadas)
-        geom.computeBoundingBox();
-        const bb = geom.boundingBox;
-        if (bb) {
-          const centerX = (bb.min.x + bb.max.x) / 2;
-          const centerY = (bb.min.y + bb.max.y) / 2;
-
-          if (Math.abs(centerX) > 20 || Math.abs(centerY) > 20) {
-            geom.translate(-centerX, -centerY, 0);
-          }
-        }
-
         let assignedBead = this.palette[validPartIndex % this.palette.length];
         let category = 'Parte 3MF';
 
@@ -352,6 +340,25 @@ export class MultipartLoader {
       }
     });
 
+    // Centralização unificada do conjunto montado (evita que a cabeça e corpo se separem)
+    if (parts.length > 0) {
+      const unifiedBox = new THREE.Box3();
+      for (const p of parts) {
+        p.geometry.computeBoundingBox();
+        if (p.geometry.boundingBox) {
+          unifiedBox.union(p.geometry.boundingBox);
+        }
+      }
+
+      const center = new THREE.Vector3();
+      unifiedBox.getCenter(center);
+
+      for (const p of parts) {
+        p.geometry.translate(-center.x, -center.y, -center.z);
+      }
+    }
+
+    parts.sort((a, b) => a.fileName.localeCompare(b.fileName, undefined, { numeric: true }));
     return parts;
   }
 

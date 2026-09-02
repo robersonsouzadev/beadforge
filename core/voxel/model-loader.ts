@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three-stdlib';
 import { ThreeMFLoader } from 'three-stdlib';
 import { parseVoxBinary } from './vox-parser';
 import { VoxelEngine } from './voxelizer';
+import { Bambu3MFParser } from './bambu-3mf-parser';
 import type { BeadColor } from '@/core/schemas/palette';
 import type { VoxelGrid3D, FillMode } from './voxel-types';
 
@@ -76,9 +77,37 @@ export class Model3DLoader {
   }
 
   /**
-   * Processa arquivo .3MF (Bambu Studio / Prusa / Windows 3D Builder)
+   * Processa arquivo .3MF (Bambu Studio, OrcaSlicer, MakerWorld, Prusa e 3D Builder)
    */
-  public load3mfBuffer(buffer: ArrayBuffer, options: ModelLoadOptions): VoxelGrid3D {
+  public async load3mfBuffer(buffer: ArrayBuffer, options: ModelLoadOptions): Promise<VoxelGrid3D> {
+    try {
+      // 1. Tentar parser nativo do Bambu Studio / OrcaSlicer com cores completas de filamento e pintura facial
+      const bambuParsed = await Bambu3MFParser.parse(buffer);
+      if (bambuParsed && bambuParsed.positions.length > 0) {
+        const rawVoxels = this.engine.voxelizeTriangleMesh(
+          bambuParsed.positions,
+          undefined,
+          bambuParsed.colors,
+          { width: options.width, height: options.height, depth: options.depth }
+        );
+
+        return this.engine.buildFromRawVoxels(
+          rawVoxels,
+          options.width,
+          options.height,
+          options.depth,
+          {
+            fillMode: options.fillMode,
+            wallThickness: options.wallThickness || 1,
+            pitchMm: options.pitchMm || 2.6,
+          }
+        );
+      }
+    } catch (bambuErr) {
+      console.warn('Parser Bambu 3MF falhou, usando ThreeMFLoader fallback:', bambuErr);
+    }
+
+    // Fallback: ThreeMFLoader padrão
     const loader = new ThreeMFLoader();
     const group = loader.parse(buffer);
 
