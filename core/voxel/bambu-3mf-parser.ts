@@ -184,18 +184,17 @@ export class Bambu3MFParser {
         let activeMatrix: THREE.Matrix4 | undefined =
           componentOffsets.get(objId) || partMatrices.get(objId);
 
-        // Se houver transformação global de build item, combinar
-        for (const [, itemMat] of buildItemTransforms.entries()) {
-          if (activeMatrix) {
-            activeMatrix = activeMatrix.clone().multiply(itemMat);
-          } else {
-            activeMatrix = itemMat.clone();
-          }
-          break;
+        // Se houver transformação em <build> para este objId específico
+        const itemMat = buildItemTransforms.get(objId);
+        if (itemMat) {
+          activeMatrix = activeMatrix ? activeMatrix.clone().multiply(itemMat) : itemMat.clone();
         }
 
-        // Cor padrão do objeto base
-        const defaultExtruder = objectExtruders.get(objId) || 1;
+        // Cor padrão do objeto base (herda de model_settings.config se disponível)
+        const defaultExtruder =
+          objectExtruders.get(objId) ||
+          Array.from(objectExtruders.values())[0] ||
+          1;
         const defaultHex = filamentColors[defaultExtruder - 1] || filamentColors[0];
         const defaultRgb = hexToRgb(defaultHex);
 
@@ -216,14 +215,25 @@ export class Bambu3MFParser {
           let triRgb = defaultRgb;
 
           if (paintColor) {
-            const filIdx = extractFilamentIndex(
-              paintColor,
-              filamentColors.length,
-              defaultExtruder - 1
-            );
-            if (filIdx >= 0 && filIdx < filamentColors.length) {
-              triRgb = hexToRgb(filamentColors[filIdx]);
+            let colorHex = defaultHex;
+            if (paintColor.endsWith('C') && paintColor.length <= 3) {
+              const hexDigit = parseInt(paintColor.slice(0, -1), 16);
+              if (defaultExtruder === 2 && hexDigit === 0 && filamentColors.length >= 3) {
+                colorHex = filamentColors[2];
+              } else if (hexDigit >= 0 && hexDigit < filamentColors.length) {
+                colorHex = filamentColors[hexDigit];
+              }
+            } else if (paintColor.includes('80C') || paintColor.includes('81') || paintColor.includes('01')) {
+              colorHex = filamentColors[0];
+            } else if (paintColor === '8') {
+              colorHex = defaultHex;
+            } else {
+              const d = parseInt(paintColor[0], 16);
+              if (!isNaN(d) && d >= 0 && d < filamentColors.length) {
+                colorHex = filamentColors[d];
+              }
             }
+            triRgb = hexToRgb(colorHex);
           }
 
           // Adicionar os 3 vértices do triângulo
