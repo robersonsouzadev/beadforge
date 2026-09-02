@@ -174,6 +174,7 @@ interface EditorState {
   addLayer3D: () => void;
   duplicateLayer3D: (z: number) => void;
   deleteLayer3D: (z: number) => void;
+  remap3DColor: (oldCodeOrHex: string, newBead: BeadColor) => void;
 
   // Ações 2D
   setProjectName: (name: string) => void;
@@ -568,6 +569,63 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeLayerZ: nextActiveZ,
       grid: activeLayer.grid,
       summary: buildBeadSummary(activeLayer.grid, 'count'),
+    });
+  },
+
+  remap3DColor: (oldCodeOrHex, newBead) => {
+    const { grid3D, activeLayerZ } = get();
+    if (!grid3D) return;
+
+    const lowerTarget = oldCodeOrHex.toLowerCase();
+    const newLayers = grid3D.layers.map((layer) => {
+      let layerBeadCount = 0;
+      const newCells = layer.grid.cells.map((row) =>
+        row.map((cell) => {
+          if (
+            !cell.isEmpty &&
+            (cell.beadCode?.toLowerCase() === lowerTarget ||
+              cell.hex.toLowerCase() === lowerTarget)
+          ) {
+            layerBeadCount++;
+            const lum = 0.299 * newBead.rgb.r + 0.587 * newBead.rgb.g + 0.114 * newBead.rgb.b;
+            const textColor: '#000000' | '#FFFFFF' = lum > 140 ? '#000000' : '#FFFFFF';
+            return {
+              ...cell,
+              beadCode: newBead.code,
+              beadName: newBead.name,
+              hex: newBead.hex,
+              rgb: newBead.rgb,
+              textColor,
+            };
+          }
+          if (!cell.isEmpty && cell.beadCode) layerBeadCount++;
+          return cell;
+        })
+      );
+
+      return {
+        ...layer,
+        beadCount: layerBeadCount,
+        grid: {
+          ...layer.grid,
+          cells: newCells,
+        },
+      };
+    });
+
+    let grandTotal = 0;
+    for (const l of newLayers) grandTotal += l.beadCount;
+
+    const currentLayer = newLayers[activeLayerZ] || newLayers[0];
+
+    set({
+      grid3D: {
+        ...grid3D,
+        layers: newLayers,
+        totalBeads: grandTotal,
+      },
+      grid: currentLayer.grid,
+      summary: buildBeadSummary(currentLayer.grid, 'count'),
     });
   },
 

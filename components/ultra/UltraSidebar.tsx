@@ -23,6 +23,7 @@ import {
   Star,
   Loader2,
   Wand2,
+  Palette,
 } from 'lucide-react';
 
 interface UltraSidebarProps {
@@ -53,13 +54,14 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
 
   const handleClose = onClose || closeDrawers;
 
-  // Dimensões do grid alvo
-  const [targetWidth, setTargetWidth] = useState<number>(30);
-  const [targetHeight, setTargetHeight] = useState<number>(30);
-  const [targetDepth, setTargetDepth] = useState<number>(20);
+  // Dimensões padrão otimizadas para escultura vertical de alta definição
+  const [targetWidth, setTargetWidth] = useState<number>(38);
+  const [targetHeight, setTargetHeight] = useState<number>(56);
+  const [targetDepth, setTargetDepth] = useState<number>(28);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [remappingColor, setRemappingColor] = useState<{ code: string; hex: string; name: string } | null>(null);
 
   const handleExport3DPDF = async () => {
     if (!grid3D) return;
@@ -360,10 +362,10 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
             <span className="text-[10px] text-zinc-500 font-medium block mb-1.5">Predefinições de Alta Definição:</span>
             <div className="grid grid-cols-4 gap-1">
               {[
-                { label: '28×28', w: 28, h: 28, d: 20 },
-                { label: '38×38', w: 38, h: 38, d: 28 },
-                { label: '48×48', w: 48, h: 48, d: 36 },
-                { label: 'Ultra 56²', w: 56, h: 56, d: 44 },
+                { label: 'Compacto', sub: '28×38', w: 28, h: 38, d: 20 },
+                { label: 'Alta Def.', sub: '38×56', w: 38, h: 56, d: 28 },
+                { label: 'Ultra HD', sub: '48×70', w: 48, h: 70, d: 36 },
+                { label: 'Master', sub: '56×82', w: 56, h: 82, d: 42 },
               ].map((p) => (
                 <button
                   key={p.label}
@@ -373,13 +375,14 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
                     setTargetHeight(p.h);
                     setTargetDepth(p.d);
                   }}
-                  className={`py-1 px-1 rounded-md text-[10px] font-semibold transition border ${
+                  className={`py-1.5 px-1 rounded-lg text-center transition border ${
                     targetWidth === p.w && targetHeight === p.h && targetDepth === p.d
-                      ? 'bg-amber-400 border-amber-400 text-zinc-950 font-bold'
-                      : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                      ? 'bg-amber-400 border-amber-400 text-zinc-950 font-bold shadow-sm'
+                      : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700'
                   }`}
                 >
-                  {p.label}
+                  <span className="text-[10px] font-bold block leading-tight">{p.label}</span>
+                  <span className="text-[9px] opacity-75 font-mono block">{p.sub}</span>
                 </button>
               ))}
             </div>
@@ -473,6 +476,83 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
             </>
           )}
         </button>
+
+        {/* Gerenciador de Cores da Escultura 3D (Substituir / Customizar Cores) */}
+        {bom && bom.items.length > 0 && (
+          <div className="p-3.5 bg-zinc-950/90 rounded-xl border border-zinc-800 space-y-3">
+            <div className="flex items-center justify-between font-bold text-zinc-100 text-xs">
+              <span className="flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-amber-400" />
+                <span>Cores da Escultura ({bom.items.length})</span>
+              </span>
+              <span className="text-[10px] text-zinc-500 font-normal">Clique para trocar</span>
+            </div>
+
+            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+              {bom.items.map((item) => (
+                <div key={item.code} className="space-y-1.5">
+                  <div
+                    onClick={() =>
+                      setRemappingColor(
+                        remappingColor?.code === item.code
+                          ? null
+                          : { code: item.code, hex: item.hex, name: item.name }
+                      )
+                    }
+                    className={`p-2 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition ${
+                      remappingColor?.code === item.code
+                        ? 'bg-amber-950/40 border-amber-400 ring-1 ring-amber-400/40'
+                        : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-850'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="w-5 h-5 rounded-full border border-white/20 shadow-sm shrink-0"
+                        style={{ backgroundColor: item.hex }}
+                      />
+                      <div className="min-w-0">
+                        <span className="font-semibold text-xs text-zinc-200 truncate block">
+                          [{item.code}] {item.name}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {item.totalCount} beads
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] text-amber-400 font-semibold px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/20 shrink-0">
+                      {remappingColor?.code === item.code ? 'Fechar' : 'Trocar'}
+                    </span>
+                  </div>
+
+                  {/* Seletor de Cores da Paleta */}
+                  {remappingColor?.code === item.code && (
+                    <div className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-700 space-y-2">
+                      <span className="text-[10px] text-zinc-400 font-medium block">
+                        Escolha o novo Bead para substituir <strong>{item.name}</strong> em toda a escultura:
+                      </span>
+                      <div className="grid grid-cols-6 gap-1.5 max-h-36 overflow-y-auto p-1 bg-zinc-950 rounded-lg">
+                        {activePalette.map((bead) => (
+                          <button
+                            key={bead.code}
+                            type="button"
+                            onClick={() => {
+                              useEditorStore.getState().remap3DColor(item.code, bead);
+                              setRemappingColor(null);
+                            }}
+                            className="w-6 h-6 rounded-md border border-white/20 hover:scale-110 transition shadow-sm relative group flex items-center justify-center"
+                            style={{ backgroundColor: bead.hex }}
+                            title={`[${bead.code}] ${bead.name}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Card Informativo de Materiais (BOM) */}
         {bom && (
