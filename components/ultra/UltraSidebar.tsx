@@ -7,6 +7,7 @@ import { MultipartLoader } from '@/core/voxel/multipart-loader';
 import { generateBOMReport } from '@/core/export/bom-generator';
 import { CustomSelect, SelectGroup } from '@/components/ui/CustomSelect';
 import { PALETTES } from '@/data/palettes';
+import { PEGBOARD_TEMPLATES } from '@/core/pegboards/manager';
 import type { FillMode } from '@/core/voxel/voxel-types';
 import {
   Upload,
@@ -24,6 +25,10 @@ import {
   Loader2,
   Wand2,
   Palette,
+  Square,
+  Grid3X3,
+  Circle,
+  Sparkle,
 } from 'lucide-react';
 
 interface UltraSidebarProps {
@@ -127,6 +132,59 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
       ],
     },
   ];
+
+  // Placas Pegboard disponíveis para montagem
+  const isMini = paletteId === 'mini-26mm-120' || paletteId === 'hama-mini';
+  const beadDiameterMm = isMini ? 2.6 : 5.0;
+  const currentBeadTypeId = isMini ? 'hama-mini-26' : 'hama-midi-50';
+
+  const [selectedPegboardId, setSelectedPegboardId] = useState<string>(
+    isMini ? 'hama-mini-74' : 'hama-midi-145'
+  );
+
+  const pegboardGroups: SelectGroup[] = [
+    {
+      label: `Placas Compatíveis (${beadDiameterMm}mm)`,
+      icon: <Grid3X3 className="w-3 h-3 text-amber-400" />,
+      options: [
+        ...PEGBOARD_TEMPLATES.filter((tpl) => tpl.beadTypeId === currentBeadTypeId).map((tpl) => ({
+          value: tpl.id,
+          label: tpl.name,
+          subLabel: `${tpl.pinsHorizontal}×${tpl.pinsVertical} pinos`,
+          badge: `${tpl.totalBeads.toLocaleString()} beads`,
+          icon: <Square className="w-3 h-3 text-amber-400" />,
+        })),
+        {
+          value: 'custom',
+          label: 'Dimensões Personalizadas',
+          subLabel: 'Ajuste manual de pinos e camadas',
+          badge: 'Livre',
+          icon: <Sliders className="w-3 h-3 text-amber-400" />,
+        },
+      ],
+    },
+    {
+      label: 'Outras Placas Pegboard',
+      icon: <Grid3X3 className="w-3 h-3 text-zinc-500" />,
+      options: PEGBOARD_TEMPLATES.filter((tpl) => tpl.beadTypeId !== currentBeadTypeId).map((tpl) => ({
+        value: tpl.id,
+        label: tpl.name,
+        subLabel: `${tpl.pinsHorizontal}×${tpl.pinsVertical} pinos`,
+        badge: `${tpl.totalBeads.toLocaleString()} beads`,
+        icon: <Square className="w-3 h-3 text-zinc-500" />,
+      })),
+    },
+  ];
+
+  const handleSelectPegboard = (tplId: string) => {
+    setSelectedPegboardId(tplId);
+    if (tplId === 'custom') return;
+    const tpl = PEGBOARD_TEMPLATES.find((p) => p.id === tplId);
+    if (tpl) {
+      setTargetWidth(tpl.pinsHorizontal);
+      setTargetHeight(tpl.pinsVertical);
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -308,6 +366,18 @@ export function UltraSidebar({ onClose, isDrawer = false }: UltraSidebarProps) {
               ZIP com vários STLs (Homem-Aranha etc.), 3MF, VOX ou OBJ
             </span>
           </button>
+        </div>
+
+        {/* Placa Pegboard de Montagem (Igual ao 2D) */}
+        <div>
+          <label className="block text-zinc-400 font-medium mb-1">
+            Placa Pegboard de Montagem
+          </label>
+          <CustomSelect
+            groups={pegboardGroups}
+            value={selectedPegboardId}
+            onChange={handleSelectPegboard}
+          />
         </div>
 
         {/* Resolução do Grid Voxel (X, Y, Z) */}
